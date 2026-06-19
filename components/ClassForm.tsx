@@ -32,12 +32,23 @@ interface ClassFormProps {
   initialValue?: ClassItem | null;
   overlaps: ClassItem[];
   timeOptions: string[];
+  timetableStart: string;
+  timetableEnd: string;
   onPreview: (value: ClassPayload, editingId?: string) => void;
   onSubmit: (value: ClassPayload) => void;
   onCancel: () => void;
 }
 
-export function ClassForm({ initialValue, overlaps, timeOptions, onPreview, onSubmit, onCancel }: ClassFormProps) {
+export function ClassForm({
+  initialValue,
+  overlaps,
+  timeOptions,
+  timetableStart,
+  timetableEnd,
+  onPreview,
+  onSubmit,
+  onCancel
+}: ClassFormProps) {
   const [value, setValue] = useState<ClassPayload>(initialValue ?? emptyClass);
   const [submitted, setSubmitted] = useState(false);
   const selectedDays = safeDays(value.days);
@@ -45,8 +56,6 @@ export function ClassForm({ initialValue, overlaps, timeOptions, onPreview, onSu
     () => Array.from(new Set([...(Array.isArray(timeOptions) ? timeOptions : []), ...buildTimeOptions(10)])).sort((a, b) => timeToMinutes(a) - timeToMinutes(b)),
     [timeOptions]
   );
-  const timetableStart = "08:00";
-  const timetableEnd = "16:00";
 
   const errors = {
     courseCode: !value.courseCode.trim(),

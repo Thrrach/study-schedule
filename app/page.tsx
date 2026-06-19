@@ -201,6 +201,8 @@ export default function Home() {
             initialValue={editingClass}
             overlaps={overlaps}
             timeOptions={timeOptions}
+            timetableStart={settings.startTime}
+            timetableEnd={settings.endTime}
             onPreview={setDraft}
             onCancel={() => setFormOpen(false)}
             onSubmit={(payload) => {
@@ -231,11 +233,20 @@ function SettingsForm({
 
   function setSlots(timeSlots: string[]) {
     const normalized = normalizeTimeSlots(timeSlots);
+    const chronologicalSlots = [...normalized].sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
     onChange({
       ...settings,
       timeSlots: normalized,
-      startTime: normalized[0] ?? settings.startTime,
-      endTime: normalized[normalized.length - 1] ?? settings.endTime
+      startTime: chronologicalSlots[0] ?? settings.startTime,
+      endTime: chronologicalSlots[chronologicalSlots.length - 1] ?? settings.endTime
+    });
+  }
+
+  function updateGeneratedRange(updates: Partial<Pick<TimetableSettings, "startTime" | "endTime" | "intervalMinutes">>) {
+    onChange({
+      ...settings,
+      ...updates,
+      timeSlots: []
     });
   }
 
@@ -251,7 +262,7 @@ function SettingsForm({
     if (nextIndex < 0 || nextIndex >= slots.length) return;
     const next = [...slots];
     [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-    onChange({ ...settings, timeSlots: next });
+    setSlots(next);
   }
 
   return (
@@ -259,7 +270,7 @@ function SettingsForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label>Start</Label>
-          <Select value={settings.startTime} onValueChange={(startTime) => onChange({ ...settings, startTime })}>
+          <Select value={settings.startTime} onValueChange={(startTime) => updateGeneratedRange({ startTime })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -274,7 +285,7 @@ function SettingsForm({
         </div>
         <div className="space-y-2">
           <Label>End</Label>
-          <Select value={settings.endTime} onValueChange={(endTime) => onChange({ ...settings, endTime })}>
+          <Select value={settings.endTime} onValueChange={(endTime) => updateGeneratedRange({ endTime })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -296,7 +307,7 @@ function SettingsForm({
           max={120}
           step={5}
           value={settings.intervalMinutes}
-          onChange={(event) => onChange({ ...settings, intervalMinutes: Number(event.target.value) })}
+          onChange={(event) => updateGeneratedRange({ intervalMinutes: Number(event.target.value) })}
         />
       </div>
       <Button

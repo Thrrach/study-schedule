@@ -1,29 +1,31 @@
 "use client";
 
 import { Copy, GripVertical, Pencil, Trash2 } from "lucide-react";
-import type { ClassItem } from "@/types/timetable";
+import type { ClassItem, WeekDay } from "@/types/timetable";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface ClassCardProps {
   item: ClassItem;
   compact?: boolean;
+  dragDay?: WeekDay;
   onEdit: (item: ClassItem) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function ClassCard({ item, compact, onEdit, onDuplicate, onDelete }: ClassCardProps) {
+export function ClassCard({ item, compact, dragDay, onEdit, onDuplicate, onDelete }: ClassCardProps) {
   return (
     <article
       draggable
       onDragStart={(event) => {
         event.dataTransfer.setData("text/plain", item.id);
+        event.dataTransfer.setData("application/json", JSON.stringify({ id: item.id, sourceDay: dragDay }));
         event.dataTransfer.effectAllowed = "move";
       }}
       className={cn(
-        "group rounded-md border-l-4 bg-white text-left shadow-sm ring-1 ring-slate-200 transition hover:shadow-md",
-        compact ? "flex h-full min-h-[90px] flex-col overflow-hidden px-4 py-3.5" : "space-y-1.5 p-4"
+        "group relative rounded-md border-l-4 bg-white text-left shadow-sm ring-1 ring-slate-200 transition hover:shadow-md",
+        compact ? "flex h-full min-h-[90px] flex-col overflow-hidden px-4 py-3.5 pr-12" : "space-y-1.5 p-4"
       )}
       style={{ borderLeftColor: item.color }}
     >
@@ -48,7 +50,12 @@ export function ClassCard({ item, compact, onEdit, onDuplicate, onDelete }: Clas
         {!compact ? <p className="truncate">{item.room}</p> : null}
         {!compact && item.note ? <p className="line-clamp-2 text-slate-500">{item.note}</p> : null}
       </div>
-      <div className={cn("flex justify-end gap-1 opacity-100 no-print md:opacity-0 md:group-hover:opacity-100", compact && "hidden")}>
+      <div
+        className={cn(
+          "flex justify-end gap-1 opacity-100 no-print md:opacity-0 md:group-hover:opacity-100",
+          compact && "absolute bottom-1.5 right-1.5 rounded-md bg-white/90 shadow-sm ring-1 ring-slate-200"
+        )}
+      >
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEdit(item)} aria-label="Edit class">
           <Pencil className="h-3.5 w-3.5" />
         </Button>

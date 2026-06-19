@@ -19,7 +19,11 @@ export function generateTimeSlots(settings: TimetableSettings): string[] {
 
   const start = timeToMinutes(settings.startTime);
   const end = timeToMinutes(settings.endTime);
-  const interval = Math.max(5, settings.intervalMinutes);
+  const interval = normalizeInterval(settings.intervalMinutes);
+
+  if (end <= start) {
+    return isValidTime(settings.startTime) ? [settings.startTime] : [];
+  }
 
   if (interval === 50) {
     return generatePsuStyleSlots(start, end);
@@ -38,7 +42,8 @@ export function generateTimeSlots(settings: TimetableSettings): string[] {
   return slots;
 }
 
-export function normalizeTimeSlots(timeSlots: string[]) {
+export function normalizeTimeSlots(timeSlots: unknown) {
+  if (!Array.isArray(timeSlots)) return [];
   const seen = new Set<string>();
   return timeSlots.filter((time) => {
     if (!isValidTime(time) || seen.has(time)) return false;
@@ -81,10 +86,12 @@ export function timeToGridLine(time: string, scaleStart: string, stepMinutes = 1
 
 export function buildHourLabels(startTime: string, endTime: string) {
   const startHour = Math.floor(timeToMinutes(startTime) / 60);
-  const endHour = Math.ceil(timeToMinutes(endTime) / 60);
+  const end = timeToMinutes(endTime);
+  const endHour = Math.ceil(end / 60);
   const labels: string[] = [];
 
   for (let hour = startHour; hour <= endHour; hour += 1) {
+    if (hour * 60 >= end) break;
     labels.push(`${hour.toString().padStart(2, "0")}:00`);
   }
 
@@ -96,7 +103,7 @@ export function timeToTimelineOffset(time: string, timetableStartTime: string, h
 }
 
 export function durationToWidth(startTime: string, endTime: string, hourColumnWidth: number) {
-  return ((timeToMinutes(endTime) - timeToMinutes(startTime)) / 60) * hourColumnWidth;
+  return Math.max(0, ((timeToMinutes(endTime) - timeToMinutes(startTime)) / 60) * hourColumnWidth);
 }
 
 function generatePsuStyleSlots(start: number, end: number) {
@@ -140,4 +147,11 @@ export function buildTimeOptions(stepMinutes = 10) {
     options.push(minutesToTime(minute));
   }
   return options;
+}
+
+export function normalizeInterval(value: unknown, fallback = 50) {
+  const interval = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(interval)) return fallback;
+  const rounded = Math.round(interval / 5) * 5;
+  return Math.min(120, Math.max(5, rounded));
 }

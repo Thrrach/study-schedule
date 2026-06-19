@@ -2,13 +2,14 @@
 
 import type { ClassItem, WeekDay } from "@/types/timetable";
 import { ClassCard } from "@/components/ClassCard";
+import { safeDays } from "@/lib/subject-utils";
 import { cn } from "@/lib/utils";
 
 interface TimeSlotProps {
   day: WeekDay;
   time: string;
   classes: ClassItem[];
-  onDropClass: (id: string, day: WeekDay, startTime: string) => void;
+  onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
   onEdit: (item: ClassItem) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
@@ -31,8 +32,8 @@ export function TimeSlot({
       }}
       onDrop={(event) => {
         event.preventDefault();
-        const id = event.dataTransfer.getData("text/plain");
-        if (id) onDropClass(id, day, time);
+        const payload = readDragPayload(event.dataTransfer);
+        if (payload.id) onDropClass(payload.id, day, time, payload.sourceDay);
       }}
       className={cn(
         "min-h-32 border-b border-r border-slate-200 bg-white p-1.5 transition-colors",
@@ -46,6 +47,7 @@ export function TimeSlot({
             key={item.id}
             item={item}
             compact
+            dragDay={day}
             onEdit={onEdit}
             onDuplicate={onDuplicate}
             onDelete={onDelete}
@@ -54,4 +56,21 @@ export function TimeSlot({
       </div>
     </div>
   );
+}
+
+function readDragPayload(dataTransfer: DataTransfer): { id: string; sourceDay?: WeekDay } {
+  const json = dataTransfer.getData("application/json");
+  if (json) {
+    try {
+      const payload = JSON.parse(json) as { id?: unknown; sourceDay?: unknown };
+      return {
+        id: typeof payload.id === "string" ? payload.id : "",
+        sourceDay: safeDays([payload.sourceDay])[0]
+      };
+    } catch {
+      return { id: dataTransfer.getData("text/plain") };
+    }
+  }
+
+  return { id: dataTransfer.getData("text/plain") };
 }
