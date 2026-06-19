@@ -5,24 +5,28 @@ import { ClassCard } from "@/components/ClassCard";
 import {
   buildHourLabels,
   durationToWidth,
+  isValidTime,
   minutesToTime,
   timeToMinutes,
   timeToTimelineOffset
 } from "@/lib/time";
 import { cn } from "@/lib/utils";
+import { safeDays } from "@/lib/subject-utils";
 import type { ClassItem, TimetableSettings, WeekDay } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
 
 const TIMETABLE_START_HOUR = 8;
-const TIMETABLE_END_HOUR = 18;
-const HOUR_COLUMN_WIDTH = 132;
+const TIMETABLE_END_HOUR = 16;
+const HOUR_COLUMN_WIDTH = 180;
 const DROP_STEP_MINUTES = 10;
-const LANE_HEIGHT = 92;
+const CARD_HEIGHT = 100;
+const ROW_BASE_HEIGHT = 120;
+const ROW_VERTICAL_PADDING = 10;
 
 interface TimetableGridProps {
   classes: ClassItem[];
   settings: TimetableSettings;
-  onDropClass: (id: string, day: WeekDay, startTime: string) => void;
+  onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
   onEdit: (item: ClassItem) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
@@ -30,15 +34,17 @@ interface TimetableGridProps {
 
 export function TimetableGrid({
   classes,
+  settings,
   onDropClass,
   onEdit,
   onDuplicate,
   onDelete
 }: TimetableGridProps) {
-  const timelineStart = `${TIMETABLE_START_HOUR.toString().padStart(2, "0")}:00`;
-  const timelineEnd = `${TIMETABLE_END_HOUR.toString().padStart(2, "0")}:00`;
-  const hourLabels = useMemo(() => buildHourLabels(timelineStart, timelineEnd), [timelineEnd, timelineStart]);
-  const timelineWidth = (TIMETABLE_END_HOUR - TIMETABLE_START_HOUR) * HOUR_COLUMN_WIDTH;
+  const safeClasses = Array.isArray(classes) ? classes : [];
+  const { timelineStart, timelineEnd, timelineWidth, hourLabels } = useMemo(
+    () => buildTimeline(settings),
+    [settings]
+  );
 
   return (
     <section className="print-full overflow-hidden rounded-lg border bg-white shadow-sm">
@@ -50,7 +56,7 @@ export function TimetableGrid({
         </p>
       </div>
 
-      <div className="max-h-[72vh] overflow-auto bg-white">
+      <div className="max-h-[calc(100vh-180px)] overflow-auto scroll-smooth bg-white">
         <div
           id="timetable-export"
           className="grid w-max min-w-full bg-white"
@@ -64,7 +70,7 @@ export function TimetableGrid({
               key={day.key}
               day={day.key}
               dayLabel={day.label}
-              classes={classes.filter((item) => item.days.includes(day.key))}
+              classes={safeClasses.filter((item) => safeDays(item.days).includes(day.key))}
               timelineStart={timelineStart}
               timelineEnd={timelineEnd}
               timelineWidth={timelineWidth}
@@ -95,7 +101,7 @@ function TimelineHeader({
         {hourLabels.map((hour) => (
           <div
             key={hour}
-            className="absolute top-0 h-full border-l border-slate-300 px-2 py-3 text-xs font-semibold text-slate-700"
+            className="absolute top-0 h-full border-l border-slate-300 px-3 py-3 text-sm font-semibold text-slate-700"
             style={{
               left: timeToTimelineOffset(hour, timelineStart, HOUR_COLUMN_WIDTH),
               width: HOUR_COLUMN_WIDTH
@@ -127,21 +133,21 @@ function DayRow({
   timelineStart: string;
   timelineEnd: string;
   timelineWidth: number;
-  onDropClass: (id: string, day: WeekDay, startTime: string) => void;
+  onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
   onEdit: (item: ClassItem) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
   const lanes = assignLanes(classes);
   const laneCount = Math.max(1, lanes.length);
-  const rowHeight = laneCount * LANE_HEIGHT;
+  const rowHeight = Math.max(ROW_BASE_HEIGHT, ROW_VERTICAL_PADDING * 2 + laneCount * CARD_HEIGHT);
 
   return (
     <>
       <div className="sticky left-0 z-10 flex items-center border-b border-r border-slate-300 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700" style={{ minHeight: rowHeight }}>
         {dayLabel}
       </div>
-      <div className="relative border-b border-slate-200 bg-white" style={{ width: timelineWidth, height: rowHeight }}>
+      <div className="relative overflow-hidden border-b border-slate-200 bg-white" style={{ width: timelineWidth, height: rowHeight }}>
         <TimelineBackground
           day={day}
           timelineStart={timelineStart}
@@ -150,24 +156,29 @@ function DayRow({
         />
         {lanes.flatMap((lane, laneIndex) =>
           lane.map((item) => {
-            const left = clamp(timeToTimelineOffset(item.startTime, timelineStart, HOUR_COLUMN_WIDTH), 0, timelineWidth);
-            const right = clamp(timeToTimelineOffset(item.endTime, timelineStart, HOUR_COLUMN_WIDTH), 0, timelineWidth);
+            const rawLeft = timeToTimelineOffset(item.startTime, timelineStart, HOUR_COLUMN_WIDTH);
+            const rawRight = timeToTimelineOffset(item.endTime, timelineStart, HOUR_COLUMN_WIDTH);
+            if (rawRight <= 0 || rawLeft >= timelineWidth) return null;
+
+            const left = clamp(rawLeft, 0, timelineWidth);
+            const right = clamp(rawRight, 0, timelineWidth);
             const width = Math.max(28, right - left || durationToWidth(item.startTime, item.endTime, HOUR_COLUMN_WIDTH));
 
             return (
               <div
                 key={item.id}
-                className="absolute z-[1] p-1.5"
+                className="absolute z-[1] p-1"
                 style={{
                   left,
-                  top: laneIndex * LANE_HEIGHT,
+                  top: ROW_VERTICAL_PADDING + laneIndex * CARD_HEIGHT,
                   width,
-                  height: LANE_HEIGHT
+                  height: CARD_HEIGHT
                 }}
               >
                 <ClassCard
                   item={item}
                   compact
+                  dragDay={day}
                   onEdit={onEdit}
                   onDuplicate={onDuplicate}
                   onDelete={onDelete}
@@ -190,7 +201,7 @@ function TimelineBackground({
   day: WeekDay;
   timelineStart: string;
   timelineEnd: string;
-  onDropClass: (id: string, day: WeekDay, startTime: string) => void;
+  onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
 }) {
   const start = timeToMinutes(timelineStart);
   const end = timeToMinutes(timelineEnd);
@@ -215,8 +226,8 @@ function TimelineBackground({
             }}
             onDrop={(event) => {
               event.preventDefault();
-              const id = event.dataTransfer.getData("text/plain");
-              if (id) onDropClass(id, day, time);
+              const payload = readDragPayload(event.dataTransfer);
+              if (payload.id) onDropClass(payload.id, day, time, payload.sourceDay);
             }}
             className={cn(
               "absolute top-0 h-full border-r border-slate-100 transition-colors hover:bg-sky-50/60",
@@ -235,7 +246,7 @@ function TimelineBackground({
 
 function assignLanes(classes: ClassItem[]) {
   const lanes: ClassItem[][] = [];
-  const sorted = [...classes].sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = [...(Array.isArray(classes) ? classes : [])].sort((a, b) => a.createdAt - b.createdAt);
 
   sorted.forEach((item) => {
     const targetLane = lanes.find((lane) =>
@@ -258,4 +269,41 @@ function assignLanes(classes: ClassItem[]) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function buildTimeline(settings: TimetableSettings) {
+  const fallbackStart = `${TIMETABLE_START_HOUR.toString().padStart(2, "0")}:00`;
+  const fallbackEnd = `${TIMETABLE_END_HOUR.toString().padStart(2, "0")}:00`;
+  const settingsStart = isValidTime(settings.startTime) ? settings.startTime : fallbackStart;
+  const settingsEnd = isValidTime(settings.endTime) ? settings.endTime : fallbackEnd;
+  const hasValidRange = timeToMinutes(settingsEnd) > timeToMinutes(settingsStart);
+  const start = hasValidRange ? settingsStart : fallbackStart;
+  const end = hasValidRange ? settingsEnd : fallbackEnd;
+  const timelineStart = start;
+  const timelineEnd = end;
+  const timelineWidth = Math.max(HOUR_COLUMN_WIDTH, durationToWidth(timelineStart, timelineEnd, HOUR_COLUMN_WIDTH));
+
+  return {
+    timelineStart,
+    timelineEnd,
+    timelineWidth,
+    hourLabels: buildHourLabels(timelineStart, timelineEnd)
+  };
+}
+
+function readDragPayload(dataTransfer: DataTransfer): { id: string; sourceDay?: WeekDay } {
+  const json = dataTransfer.getData("application/json");
+  if (json) {
+    try {
+      const payload = JSON.parse(json) as { id?: unknown; sourceDay?: unknown };
+      return {
+        id: typeof payload.id === "string" ? payload.id : "",
+        sourceDay: safeDays([payload.sourceDay])[0]
+      };
+    } catch {
+      return { id: dataTransfer.getData("text/plain") };
+    }
+  }
+
+  return { id: dataTransfer.getData("text/plain") };
 }
