@@ -1,11 +1,11 @@
-export type WeekDay =
-  | "monday"
-  | "tuesday"
-  | "wednesday"
-  | "thursday"
-  | "friday"
-  | "saturday"
-  | "sunday";
+export type Day =
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday";
+
+export type WeekDay = Day;
 
 export type ImageFormat = "png" | "jpeg";
 
@@ -39,12 +39,10 @@ export interface TimetableBackup {
   classes: ClassItem[];
 }
 
-export const weekDays: Array<{ key: WeekDay; label: string; shortLabel: string }> = [
-  { key: "monday", label: "Monday", shortLabel: "Mon" },
-  { key: "tuesday", label: "Tuesday", shortLabel: "Tue" },
-  { key: "wednesday", label: "Wednesday", shortLabel: "Wed" },
-  { key: "thursday", label: "Thursday", shortLabel: "Thu" },
-  { key: "friday", label: "Friday", shortLabel: "Fri" },
-  { key: "saturday", label: "Saturday", shortLabel: "Sat" },
-  { key: "sunday", label: "Sunday", shortLabel: "Sun" }
+export const weekDays: Array<{ key: Day; label: string; shortLabel: string }> = [
+  { key: "Monday", label: "Monday", shortLabel: "Mon" },
+  { key: "Tuesday", label: "Tuesday", shortLabel: "Tue" },
+  { key: "Wednesday", label: "Wednesday", shortLabel: "Wed" },
+  { key: "Thursday", label: "Thursday", shortLabel: "Thu" },
+  { key: "Friday", label: "Friday", shortLabel: "Fri" }
 ];

@@ -10,8 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { defaultSettings } from "@/data/sample-data";
 import { useTimetableStore } from "@/lib/timetable-store";
 import { buildTimeOptions, generateTimeSlots, isValidTime, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
+import { safeDays, subjectsShareDay } from "@/lib/subject-utils";
 import type { ClassItem, TimetableBackup, TimetableSettings } from "@/types/timetable";
 
 type ClassPayload = Omit<ClassItem, "id" | "createdAt" | "updatedAt">;
@@ -37,22 +39,23 @@ export default function Home() {
   const [imageFormat, setImageFormat] = useState<"png" | "jpeg">("png");
   const [importError, setImportError] = useState("");
   const timeOptions = useMemo(() => generateTimeSlots(settings), [settings]);
+  const safeClasses = useMemo(() => (Array.isArray(classes) ? classes : []), [classes]);
 
   const overlaps = draft ? findOverlaps(draft, editingClass?.id) : [];
   const totalOverlaps = useMemo(
     () =>
-      classes.reduce((count, item, index) => {
-        const hasEarlierOverlap = classes
+      safeClasses.reduce((count, item, index) => {
+        const hasEarlierOverlap = safeClasses
           .slice(0, index)
           .some(
             (other) =>
-              other.days.some((day) => item.days.includes(day)) &&
+              subjectsShareDay(other, item) &&
               timeToMinutes(other.startTime) < timeToMinutes(item.endTime) &&
               timeToMinutes(item.startTime) < timeToMinutes(other.endTime)
           );
         return count + (hasEarlierOverlap ? 1 : 0);
       }, 0),
-    [classes]
+    [safeClasses]
   );
 
   function openNewForm() {
@@ -72,7 +75,7 @@ export default function Home() {
       version: 1,
       exportedAt: new Date().toISOString(),
       settings,
-      classes
+      classes: safeClasses.map((item) => ({ ...item, days: safeDays(item.days) }))
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -87,9 +90,9 @@ export default function Home() {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const parsed = JSON.parse(await file.text()) as TimetableBackup;
-      validateBackup(parsed);
-      replaceAll(parsed);
+      const parsed = JSON.parse(await file.text()) as RawTimetableImport;
+      const backup = normalizeImport(parsed);
+      replaceAll(backup);
       setImportError("");
     } catch {
       setImportError("Could not import this JSON file. Please use a backup exported from this app.");
@@ -169,14 +172,14 @@ export default function Home() {
             <div className="rounded-lg border bg-white p-4 text-sm shadow-sm">
               <h2 className="font-semibold">Schedule status</h2>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <Metric label="Classes" value={classes.length.toString()} />
+                <Metric label="Classes" value={safeClasses.length.toString()} />
                 <Metric label="Overlap warnings" value={totalOverlaps.toString()} />
               </div>
             </div>
           </aside>
 
           <TimetableGrid
-            classes={classes}
+            classes={safeClasses}
             settings={settings}
             onDropClass={moveClass}
             onEdit={openEditForm}
@@ -380,7 +383,7 @@ function toPayload(item: ClassItem): ClassPayload {
     section: item.section,
     instructor: item.instructor,
     room: item.room,
-    days: item.days,
+    days: safeDays(item.days),
     startTime: item.startTime,
     endTime: item.endTime,
     color: item.color,
@@ -388,8 +391,25 @@ function toPayload(item: ClassItem): ClassPayload {
   };
 }
 
-function validateBackup(value: TimetableBackup) {
-  if (value.version !== 1 || !Array.isArray(value.classes) || !value.settings) {
+type RawTimetableImport = Partial<TimetableBackup> & {
+  subjects?: unknown;
+  classes?: unknown;
+};
+
+function normalizeImport(value: RawTimetableImport): TimetableBackup {
+  if (!value || typeof value !== "object") {
     throw new Error("Invalid backup");
   }
+
+  const rawClasses = Array.isArray(value.classes) ? value.classes : Array.isArray(value.subjects) ? value.subjects : null;
+  if (!rawClasses) {
+    throw new Error("Invalid backup");
+  }
+
+  return {
+    version: 1,
+    exportedAt: value.exportedAt ?? new Date().toISOString(),
+    settings: value.settings ?? defaultSettings,
+    classes: rawClasses as TimetableBackup["classes"]
+  };
 }

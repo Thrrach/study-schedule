@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { defaultSettings, sampleClasses } from "@/data/sample-data";
 import { hasTimeOverlap, normalizeTimeSlots } from "@/lib/time";
+import { normalizeClass, normalizeClasses, subjectsShareDay, withAddedDay } from "@/lib/subject-utils";
 import { uid } from "@/lib/utils";
 import type { ClassItem, TimetableBackup, TimetableSettings, WeekDay } from "@/types/timetable";
 
@@ -26,38 +27,37 @@ interface TimetableState {
 export const useTimetableStore = create<TimetableState>()(
   persist(
     (set, get) => ({
-      classes: sampleClasses,
+      classes: normalizeClasses(sampleClasses),
       settings: defaultSettings,
       hydrated: false,
       setHydrated: (value) => set({ hydrated: value }),
       addClass: (item) => {
         const timestamp = Date.now();
         set((state) => ({
-          classes: [
-            ...state.classes,
+          classes: normalizeClasses([
+            ...(Array.isArray(state.classes) ? state.classes : []),
             {
-              ...item,
-              id: uid(),
+              ...normalizeClass(item),
               createdAt: timestamp,
               updatedAt: timestamp
             }
-          ]
+          ])
         }));
       },
       updateClass: (id, updates) => {
         set((state) => ({
-          classes: state.classes.map((item) =>
-            item.id === id ? { ...item, ...updates, updatedAt: Date.now() } : item
-          )
+          classes: normalizeClasses((Array.isArray(state.classes) ? state.classes : []).map((item) =>
+            item.id === id ? { ...normalizeClass({ ...item, ...updates }), id, updatedAt: Date.now() } : item
+          ))
         }));
       },
       duplicateClass: (id) => {
-        const source = get().classes.find((item) => item.id === id);
+        const source = (Array.isArray(get().classes) ? get().classes : []).find((item) => item.id === id);
         if (!source) return;
         const timestamp = Date.now();
         set((state) => ({
-          classes: [
-            ...state.classes,
+          classes: normalizeClasses([
+            ...(Array.isArray(state.classes) ? state.classes : []),
             {
               ...source,
               id: uid(),
@@ -65,25 +65,25 @@ export const useTimetableStore = create<TimetableState>()(
               createdAt: timestamp,
               updatedAt: timestamp
             }
-          ]
+          ])
         }));
       },
       deleteClass: (id) => {
-        set((state) => ({ classes: state.classes.filter((item) => item.id !== id) }));
+        set((state) => ({ classes: (Array.isArray(state.classes) ? state.classes : []).filter((item) => item.id !== id) }));
       },
       moveClass: (id, day, startTime, endTime) => {
         set((state) => ({
-          classes: state.classes.map((item) => {
+          classes: normalizeClasses((Array.isArray(state.classes) ? state.classes : []).map((item) => {
             if (item.id !== id) return item;
             const duration = endTime ? 0 : Math.max(10, timeDiff(item.startTime, item.endTime));
             return {
               ...item,
-              days: item.days.includes(day) ? item.days : [...item.days, day],
+              days: withAddedDay(item.days, day),
               startTime,
               endTime: endTime ?? addMinutes(startTime, duration),
               updatedAt: Date.now()
             };
-          })
+          }))
         }));
       },
       updateSettings: (settings) =>
@@ -93,7 +93,7 @@ export const useTimetableStore = create<TimetableState>()(
             timeSlots: normalizeTimeSlots(settings.timeSlots ?? [])
           }
         }),
-      resetSample: () => set({ classes: sampleClasses, settings: defaultSettings }),
+      resetSample: () => set({ classes: normalizeClasses(sampleClasses), settings: defaultSettings }),
       replaceAll: (backup) =>
         set({
           classes: normalizeClasses(backup.classes),
@@ -104,15 +104,16 @@ export const useTimetableStore = create<TimetableState>()(
           }
         }),
       findOverlaps: (candidate, ignoreId) =>
-        get().classes.filter(
+        (Array.isArray(get().classes) ? get().classes : []).filter(
           (item) =>
             item.id !== ignoreId &&
-            item.days.some((day) => candidate.days.includes(day)) &&
+            subjectsShareDay(item, candidate) &&
             hasTimeOverlap(item.startTime, item.endTime, candidate.startTime, candidate.endTime)
         )
     }),
     {
       name: "psu-timetable-builder",
+      version: 2,
       partialize: (state) => ({ classes: state.classes, settings: state.settings }),
       migrate: (persisted) => {
         const state = persisted as Partial<Pick<TimetableState, "classes" | "settings">>;
@@ -122,6 +123,18 @@ export const useTimetableStore = create<TimetableState>()(
             ...defaultSettings,
             ...state.settings,
             timeSlots: normalizeTimeSlots(state.settings?.timeSlots ?? defaultSettings.timeSlots)
+          }
+        };
+      },
+      merge: (persisted, current) => {
+        const state = persisted as Partial<Pick<TimetableState, "classes" | "settings">>;
+        return {
+          ...current,
+          classes: normalizeClasses(state.classes ?? current.classes),
+          settings: {
+            ...current.settings,
+            ...state.settings,
+            timeSlots: normalizeTimeSlots(state.settings?.timeSlots ?? current.settings.timeSlots)
           }
         };
       },
@@ -142,21 +155,4 @@ function addMinutes(time: string, minutes: number) {
   return `${Math.floor(total / 60).toString().padStart(2, "0")}:${(total % 60)
     .toString()
     .padStart(2, "0")}`;
-}
-
-type LegacyClassItem = Omit<ClassItem, "days"> & {
-  day?: WeekDay;
-  days?: WeekDay[];
-};
-
-function normalizeClasses(classes: Array<ClassItem | LegacyClassItem>) {
-  return classes.map((item) => {
-    const days = item.days?.length ? item.days : item.day ? [item.day] : ["monday"];
-    const { day: _legacyDay, ...rest } = item;
-
-    return {
-      ...rest,
-      days
-    } as ClassItem;
-  });
 }
