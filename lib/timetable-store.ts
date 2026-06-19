@@ -3,8 +3,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { defaultSettings, sampleClasses } from "@/data/sample-data";
-import { hasTimeOverlap, normalizeTimeSlots } from "@/lib/time";
-import { normalizeClass, normalizeClasses, subjectsShareDay, withAddedDay } from "@/lib/subject-utils";
+import { hasTimeOverlap, isValidTime, normalizeInterval, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
+import { normalizeClass, normalizeClasses, safeDays, subjectsShareDay } from "@/lib/subject-utils";
 import { uid } from "@/lib/utils";
 import type { ClassItem, TimetableBackup, TimetableSettings, WeekDay } from "@/types/timetable";
 
@@ -17,7 +17,7 @@ interface TimetableState {
   updateClass: (id: string, updates: Omit<ClassItem, "id" | "createdAt" | "updatedAt">) => void;
   duplicateClass: (id: string) => void;
   deleteClass: (id: string) => void;
-  moveClass: (id: string, day: WeekDay, startTime: string, endTime?: string) => void;
+  moveClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
   updateSettings: (settings: TimetableSettings) => void;
   resetSample: () => void;
   replaceAll: (backup: TimetableBackup) => void;
@@ -61,7 +61,7 @@ export const useTimetableStore = create<TimetableState>()(
             {
               ...source,
               id: uid(),
-              courseName: `${source.courseName} (copy)`,
+              courseName: source.courseName ? `${source.courseName} (copy)` : "Untitled class (copy)",
               createdAt: timestamp,
               updatedAt: timestamp
             }
@@ -71,16 +71,16 @@ export const useTimetableStore = create<TimetableState>()(
       deleteClass: (id) => {
         set((state) => ({ classes: (Array.isArray(state.classes) ? state.classes : []).filter((item) => item.id !== id) }));
       },
-      moveClass: (id, day, startTime, endTime) => {
+      moveClass: (id, day, startTime, sourceDay) => {
         set((state) => ({
           classes: normalizeClasses((Array.isArray(state.classes) ? state.classes : []).map((item) => {
             if (item.id !== id) return item;
-            const duration = endTime ? 0 : Math.max(10, timeDiff(item.startTime, item.endTime));
+            const duration = Math.max(10, timeDiff(item.startTime, item.endTime));
             return {
               ...item,
-              days: withAddedDay(item.days, day),
+              days: moveDay(item.days, day, sourceDay),
               startTime,
-              endTime: endTime ?? addMinutes(startTime, duration),
+              endTime: addMinutes(startTime, duration),
               updatedAt: Date.now()
             };
           }))
@@ -88,20 +88,13 @@ export const useTimetableStore = create<TimetableState>()(
       },
       updateSettings: (settings) =>
         set({
-          settings: {
-            ...settings,
-            timeSlots: normalizeTimeSlots(settings.timeSlots ?? [])
-          }
+          settings: normalizeSettings(settings, get().settings)
         }),
       resetSample: () => set({ classes: normalizeClasses(sampleClasses), settings: defaultSettings }),
       replaceAll: (backup) =>
         set({
           classes: normalizeClasses(backup.classes),
-          settings: {
-            ...defaultSettings,
-            ...backup.settings,
-            timeSlots: normalizeTimeSlots(backup.settings.timeSlots ?? defaultSettings.timeSlots)
-          }
+          settings: normalizeSettings(backup.settings, defaultSettings)
         }),
       findOverlaps: (candidate, ignoreId) =>
         (Array.isArray(get().classes) ? get().classes : []).filter(
@@ -116,26 +109,18 @@ export const useTimetableStore = create<TimetableState>()(
       version: 2,
       partialize: (state) => ({ classes: state.classes, settings: state.settings }),
       migrate: (persisted) => {
-        const state = persisted as Partial<Pick<TimetableState, "classes" | "settings">>;
+        const state = asPartialState(persisted);
         return {
           classes: normalizeClasses(state.classes ?? sampleClasses),
-          settings: {
-            ...defaultSettings,
-            ...state.settings,
-            timeSlots: normalizeTimeSlots(state.settings?.timeSlots ?? defaultSettings.timeSlots)
-          }
+          settings: normalizeSettings(state.settings, defaultSettings)
         };
       },
       merge: (persisted, current) => {
-        const state = persisted as Partial<Pick<TimetableState, "classes" | "settings">>;
+        const state = asPartialState(persisted);
         return {
           ...current,
           classes: normalizeClasses(state.classes ?? current.classes),
-          settings: {
-            ...current.settings,
-            ...state.settings,
-            timeSlots: normalizeTimeSlots(state.settings?.timeSlots ?? current.settings.timeSlots)
-          }
+          settings: normalizeSettings(state.settings, current.settings)
         };
       },
       onRehydrateStorage: () => (state) => state?.setHydrated(true)
@@ -155,4 +140,54 @@ function addMinutes(time: string, minutes: number) {
   return `${Math.floor(total / 60).toString().padStart(2, "0")}:${(total % 60)
     .toString()
     .padStart(2, "0")}`;
+}
+
+function moveDay(days: unknown, targetDay: WeekDay, sourceDay?: WeekDay) {
+  const currentDays = safeDays(days);
+  if (!currentDays.length) return [targetDay];
+
+  const movedDays =
+    sourceDay && currentDays.includes(sourceDay)
+      ? currentDays.map((day) => (day === sourceDay ? targetDay : day))
+      : currentDays.includes(targetDay)
+        ? currentDays
+        : [...currentDays, targetDay];
+
+  return Array.from(new Set(movedDays));
+}
+
+function normalizeSettings(rawSettings: unknown, fallback: TimetableSettings): TimetableSettings {
+  const raw = isRecord(rawSettings) ? rawSettings : {};
+  const startTime = normalizeTime(raw.startTime, fallback.startTime);
+  const endTime = normalizeTime(raw.endTime, fallback.endTime);
+  const hasCustomSlots = Object.prototype.hasOwnProperty.call(raw, "timeSlots");
+  const timeSlots = hasCustomSlots ? normalizeTimeSlots(raw.timeSlots) : normalizeTimeSlots(fallback.timeSlots);
+  const intervalMinutes = normalizeInterval(raw.intervalMinutes, fallback.intervalMinutes);
+
+  if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
+    return {
+      ...fallback,
+      intervalMinutes,
+      timeSlots
+    };
+  }
+
+  return {
+    startTime,
+    endTime,
+    intervalMinutes,
+    timeSlots
+  };
+}
+
+function normalizeTime(value: unknown, fallback: string) {
+  return typeof value === "string" && isValidTime(value) ? value : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
+}
+
+function asPartialState(value: unknown): Partial<Pick<TimetableState, "classes" | "settings">> {
+  return isRecord(value) ? value : {};
 }

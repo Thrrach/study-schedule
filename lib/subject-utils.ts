@@ -1,4 +1,5 @@
 import { uid } from "@/lib/utils";
+import { isValidTime, minutesToTime, timeToMinutes } from "@/lib/time";
 import type { ClassItem, Day, WeekDay } from "@/types/timetable";
 
 const dayAliases: Record<string, Day> = {
@@ -35,31 +36,34 @@ export function safeDays(value: unknown): Day[] {
   return Array.from(new Set(days));
 }
 
-export function normalizeClass(raw: RawClassItem): ClassItem {
+export function normalizeClass(raw: unknown): ClassItem {
+  const source = isRecord(raw) ? raw : {};
   const timestamp = Date.now();
-  const normalizedDays = safeDays(raw.days);
-  const legacyDay = normalizeDay(raw.day);
+  const normalizedDays = safeDays(source.days);
+  const legacyDay = normalizeDay(source.day);
+  const startTime = normalizeTime(source.startTime, "08:00");
+  const endTime = normalizeEndTime(source.endTime, startTime);
 
   return {
-    id: typeof raw.id === "string" && raw.id ? raw.id : uid(),
-    courseCode: raw.courseCode ?? "",
-    courseName: raw.courseName ?? "",
-    section: raw.section ?? "",
-    instructor: raw.instructor ?? "",
-    room: raw.room ?? "",
+    id: stringValue(source.id) || uid(),
+    courseCode: stringValue(source.courseCode),
+    courseName: stringValue(source.courseName),
+    section: stringValue(source.section),
+    instructor: stringValue(source.instructor),
+    room: stringValue(source.room),
     days: normalizedDays.length ? normalizedDays : legacyDay ? [legacyDay] : [],
-    startTime: raw.startTime ?? "08:00",
-    endTime: raw.endTime ?? "09:00",
-    color: raw.color ?? "#38bdf8",
-    note: raw.note ?? "",
-    createdAt: raw.createdAt ?? timestamp,
-    updatedAt: raw.updatedAt ?? timestamp
+    startTime,
+    endTime,
+    color: normalizeColor(source.color),
+    note: stringValue(source.note),
+    createdAt: timestampValue(source.createdAt, timestamp),
+    updatedAt: timestampValue(source.updatedAt, timestamp)
   };
 }
 
 export function normalizeClasses(rawClasses: unknown): ClassItem[] {
   if (!Array.isArray(rawClasses)) return [];
-  return dedupeClasses(rawClasses.map((item) => normalizeClass(item as RawClassItem)));
+  return dedupeClasses(rawClasses.map((item) => normalizeClass(item)));
 }
 
 export function subjectsShareDay(first: Pick<ClassItem, "days">, second: Pick<ClassItem, "days">) {
@@ -94,30 +98,36 @@ function dedupeClasses(classes: ClassItem[]) {
     byId.set(normalized.id, normalized);
   });
 
-  const seenDaySlots = new Set<string>();
-  const deduped: ClassItem[] = [];
+  return Array.from(byId.values())
+    .filter((item) => safeDays(item.days).length)
+    .sort((a, b) => a.createdAt - b.createdAt);
+}
 
-  Array.from(byId.values())
-    .sort((a, b) => a.createdAt - b.createdAt)
-    .forEach((item) => {
-      const uniqueDays = safeDays(item.days).filter((day) => {
-        const key = [
-          item.courseCode.trim().toLowerCase(),
-          item.section.trim().toLowerCase(),
-          day,
-          item.startTime,
-          item.endTime
-        ].join("|");
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
+}
 
-        if (seenDaySlots.has(key)) return false;
-        seenDaySlots.add(key);
-        return true;
-      });
+function stringValue(value: unknown, fallback = "") {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return fallback;
+  return String(value);
+}
 
-      if (uniqueDays.length) {
-        deduped.push({ ...item, days: uniqueDays });
-      }
-    });
+function timestampValue(value: unknown, fallback: number) {
+  const timestamp = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(timestamp) ? timestamp : fallback;
+}
 
-  return deduped;
+function normalizeTime(value: unknown, fallback: string) {
+  return typeof value === "string" && isValidTime(value) ? value : fallback;
+}
+
+function normalizeEndTime(value: unknown, startTime: string) {
+  const fallbackEnd = minutesToTime(Math.min(23 * 60 + 59, timeToMinutes(startTime) + 50));
+  const endTime = normalizeTime(value, fallbackEnd);
+  return timeToMinutes(endTime) > timeToMinutes(startTime) ? endTime : fallbackEnd;
+}
+
+function normalizeColor(value: unknown) {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#38bdf8";
 }
