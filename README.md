@@ -4,11 +4,12 @@ A modern Next.js timetable builder inspired by Prince of Songkla University regi
 
 ## Features
 
-- Horizontal weekly timetable with days as sticky left rows and time slots as sticky top columns.
+- Horizontal weekday timetable with Monday-Friday rows and 08:00-16:00 hour columns.
 - Hour-only timetable header using fixed-width hour columns as the visual reference.
 - Custom start time, end time, interval minutes, and editable ordered time slots.
 - PSU-style time support, including slots such as `08:00`, `08:50`, `09:00`, `09:50`, `10:00`, and `10:50`. The default `50` minute interval uses this `:00` / `:50` PSU-style pattern.
 - Add, edit, duplicate, delete, and drag classes between cells.
+- Select multiple weekdays for one subject; the subject renders independently on every selected weekday row.
 - Multiple classes in the same day/time cell are stacked by `createdAt` ascending.
 - Add, edit, remove, and reorder custom PSU-style time columns.
 - Class cards are absolutely positioned from `startTime` and `endTime` using timeline math, so width is proportional to real duration.

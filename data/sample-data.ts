@@ -4,7 +4,7 @@ const now = 1718427600000;
 
 export const defaultSettings: TimetableSettings = {
   startTime: "08:00",
-  endTime: "18:00",
+  endTime: "16:00",
   intervalMinutes: 50,
   timeSlots: [
     "08:00",
@@ -21,10 +21,7 @@ export const defaultSettings: TimetableSettings = {
     "14:50",
     "15:00",
     "15:50",
-    "16:00",
-    "16:50",
-    "17:00",
-    "17:50"
+    "16:00"
   ]
 };
 
@@ -36,7 +33,7 @@ export const sampleClasses: ClassItem[] = [
     section: "01",
     instructor: "Dr. Anong",
     room: "LRC 205",
-    days: ["monday", "tuesday"],
+    days: ["Monday", "Tuesday"],
     startTime: "08:00",
     endTime: "09:50",
     color: "#0f766e",
@@ -51,7 +48,7 @@ export const sampleClasses: ClassItem[] = [
     section: "02",
     instructor: "Asst. Prof. Narin",
     room: "COM 304",
-    days: ["monday"],
+    days: ["Monday"],
     startTime: "08:00",
     endTime: "09:50",
     color: "#2563eb",
@@ -66,7 +63,7 @@ export const sampleClasses: ClassItem[] = [
     section: "05",
     instructor: "Aj. Mali",
     room: "BSc 1102",
-    days: ["wednesday"],
+    days: ["Wednesday"],
     startTime: "10:00",
     endTime: "11:50",
     color: "#d97706",
@@ -80,9 +77,9 @@ export const sampleClasses: ClassItem[] = [
     section: "01",
     instructor: "Dr. Wichai",
     room: "ENG 420",
-    days: ["friday"],
+    days: ["Friday"],
     startTime: "13:00",
-    endTime: "14:50",
+    endTime: "15:50",
     color: "#7c3aed",
     note: "Bring laptop",
     createdAt: now + 3,

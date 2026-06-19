@@ -1,6 +1,7 @@
 import type { TimetableSettings } from "@/types/timetable";
 
 export function timeToMinutes(time: string): number {
+  if (!isValidTime(time)) return 0;
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
 }
@@ -47,6 +48,7 @@ export function normalizeTimeSlots(timeSlots: string[]) {
 }
 
 export function isValidTime(time: string) {
+  if (typeof time !== "string") return false;
   if (!/^\d{2}:\d{2}$/.test(time)) return false;
   const [hours, minutes] = time.split(":").map(Number);
   return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
