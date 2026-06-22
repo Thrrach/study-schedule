@@ -85,15 +85,18 @@ export function timeToGridLine(time: string, scaleStart: string, stepMinutes = 1
 }
 
 export function buildHourLabels(startTime: string, endTime: string) {
-  const startHour = Math.floor(timeToMinutes(startTime) / 60);
+  const start = timeToMinutes(startTime);
   const end = timeToMinutes(endTime);
-  const endHour = Math.ceil(end / 60);
   const labels: string[] = [];
 
-  for (let hour = startHour; hour <= endHour; hour += 1) {
-    if (hour * 60 >= end) break;
-    labels.push(`${hour.toString().padStart(2, "0")}:00`);
+  if (end <= start) return labels;
+
+  labels.push(startTime);
+  for (let minute = Math.ceil(start / 60) * 60; minute < end; minute += 60) {
+    const label = minutesToTime(minute);
+    if (label !== labels[labels.length - 1]) labels.push(label);
   }
+  if (endTime !== labels[labels.length - 1]) labels.push(endTime);
 
   return labels;
 }

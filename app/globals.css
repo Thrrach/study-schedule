@@ -33,6 +33,18 @@ body {
   @apply bg-background text-foreground antialiased;
 }
 
+[data-exporting="true"] [data-export-sticky] {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+}
+
+[data-exporting="true"],
+[data-exporting="true"] * {
+  animation: none !important;
+  transition: none !important;
+}
+
 @media print {
   body {
     background: white;

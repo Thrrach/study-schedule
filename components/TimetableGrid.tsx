@@ -62,7 +62,10 @@ export function TimetableGrid({
           className="grid w-max min-w-full bg-white"
           style={{ gridTemplateColumns: `116px ${timelineWidth}px` }}
         >
-          <div className="sticky left-0 top-0 z-30 border-b border-r border-slate-300 bg-slate-100 px-3 py-3" />
+          <div
+            data-export-sticky
+            className="sticky left-0 top-0 z-30 border-b border-r border-slate-300 bg-slate-100 px-3 py-3"
+          />
           <TimelineHeader hourLabels={hourLabels} timelineStart={timelineStart} width={timelineWidth} />
 
           {weekDays.map((day) => (
@@ -96,20 +99,32 @@ function TimelineHeader({
   width: number;
 }) {
   return (
-    <div className="sticky top-0 z-20 border-b border-slate-300 bg-slate-100" style={{ width }}>
+    <div
+      data-export-sticky
+      className="sticky top-0 z-20 border-b border-r border-slate-300 bg-slate-100"
+      style={{ width }}
+    >
       <div className="relative min-h-14" style={{ width }}>
-        {hourLabels.map((hour) => (
-          <div
-            key={hour}
-            className="absolute top-0 h-full border-l border-slate-300 px-3 py-3 text-sm font-semibold text-slate-700"
-            style={{
-              left: timeToTimelineOffset(hour, timelineStart, HOUR_COLUMN_WIDTH),
-              width: HOUR_COLUMN_WIDTH
-            }}
-          >
-            {hour}
-          </div>
-        ))}
+        {hourLabels.map((hour, index) => {
+          const isEnd = index === hourLabels.length - 1;
+          return (
+            <div
+              key={hour}
+              className="absolute top-0 h-full border-l border-slate-300 text-sm font-semibold text-slate-700"
+              style={{
+                left: timeToTimelineOffset(hour, timelineStart, HOUR_COLUMN_WIDTH),
+                width: 0
+              }}
+            >
+              <span
+                className="absolute top-3 whitespace-nowrap"
+                style={{ transform: isEnd ? "translateX(calc(-100% - 12px))" : "translateX(12px)" }}
+              >
+                {hour}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -144,10 +159,17 @@ function DayRow({
 
   return (
     <>
-      <div className="sticky left-0 z-10 flex items-center border-b border-r border-slate-300 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700" style={{ minHeight: rowHeight }}>
+      <div
+        data-export-sticky
+        className="sticky left-0 z-10 flex items-center border-b border-r border-slate-300 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700"
+        style={{ minHeight: rowHeight }}
+      >
         {dayLabel}
       </div>
-      <div className="relative overflow-hidden border-b border-slate-200 bg-white" style={{ width: timelineWidth, height: rowHeight }}>
+      <div
+        className="relative overflow-hidden border-b border-r border-slate-200 bg-white"
+        style={{ width: timelineWidth, height: rowHeight }}
+      >
         <TimelineBackground
           day={day}
           timelineStart={timelineStart}
@@ -212,7 +234,7 @@ function TimelineBackground({
   }
 
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 border-l border-slate-300">
       {units.map((time) => {
         const left = timeToTimelineOffset(time, timelineStart, HOUR_COLUMN_WIDTH);
         const isHour = time.endsWith(":00");
