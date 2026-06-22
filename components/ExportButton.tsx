@@ -59,7 +59,7 @@ export function ExportButton({ targetId, format }: ExportButtonProps) {
       link.remove();
     } catch (error) {
       console.error("Could not export timetable image", error);
-      setExportError("ส่งออกรูปไม่สำเร็จ กรุณาลองอีกครั้ง");
+      setExportError("Export failed. Please try again.");
     } finally {
       delete node.dataset.exporting;
       setExporting(false);
@@ -70,7 +70,7 @@ export function ExportButton({ targetId, format }: ExportButtonProps) {
     <div className="space-y-2">
       <Button onClick={exportImage} variant="secondary" disabled={exporting}>
         {exporting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        {exporting ? "กำลังส่งออก..." : `ดาวน์โหลด ${format.toUpperCase()}`}
+        {exporting ? "Exporting..." : `Export ${format.toUpperCase()}`}
       </Button>
       {exportError ? (
         <p className="text-sm text-destructive" role="alert">
