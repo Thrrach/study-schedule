@@ -27,6 +27,7 @@ interface TimetableGridProps {
   classes: ClassItem[];
   settings: TimetableSettings;
   onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
+  onAddClassAt: (day: WeekDay, startTime: string) => void;
   onEdit: (item: ClassItem) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
@@ -36,6 +37,7 @@ export function TimetableGrid({
   classes,
   settings,
   onDropClass,
+  onAddClassAt,
   onEdit,
   onDuplicate,
   onDelete
@@ -47,13 +49,13 @@ export function TimetableGrid({
   );
 
   return (
-    <section className="print-full overflow-hidden rounded-lg border bg-white shadow-sm">
-      <div className="border-b bg-white px-5 py-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">Prince of Songkla University</p>
-        <h2 className="text-xl font-semibold text-slate-950">Weekly Class Timetable</h2>
-        <p className="text-sm text-slate-500">
-          Subjects are positioned from real start and end times against fixed hour columns
-        </p>
+    <section className="print-full overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div className="flex flex-col justify-between gap-2 border-b bg-white px-4 py-3 sm:flex-row sm:items-end sm:px-5 sm:py-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Prince of Songkla University</p>
+          <h2 className="text-lg font-semibold text-slate-950 sm:text-xl">ตารางเรียนประจำสัปดาห์</h2>
+        </div>
+        <p className="text-xs text-slate-500 no-print">คลิกพื้นที่ว่างเพื่อเพิ่มวิชา • ลากการ์ดเพื่อย้ายเวลา</p>
       </div>
 
       <div className="max-h-[calc(100vh-180px)] overflow-auto scroll-smooth bg-white">
@@ -78,6 +80,7 @@ export function TimetableGrid({
               timelineEnd={timelineEnd}
               timelineWidth={timelineWidth}
               onDropClass={onDropClass}
+              onAddClassAt={onAddClassAt}
               onEdit={onEdit}
               onDuplicate={onDuplicate}
               onDelete={onDelete}
@@ -138,6 +141,7 @@ function DayRow({
   timelineEnd,
   timelineWidth,
   onDropClass,
+  onAddClassAt,
   onEdit,
   onDuplicate,
   onDelete
@@ -149,6 +153,7 @@ function DayRow({
   timelineEnd: string;
   timelineWidth: number;
   onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
+  onAddClassAt: (day: WeekDay, startTime: string) => void;
   onEdit: (item: ClassItem) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
@@ -175,6 +180,7 @@ function DayRow({
           timelineStart={timelineStart}
           timelineEnd={timelineEnd}
           onDropClass={onDropClass}
+          onAddClassAt={onAddClassAt}
         />
         {lanes.flatMap((lane, laneIndex) =>
           lane.map((item) => {
@@ -218,12 +224,14 @@ function TimelineBackground({
   day,
   timelineStart,
   timelineEnd,
-  onDropClass
+  onDropClass,
+  onAddClassAt
 }: {
   day: WeekDay;
   timelineStart: string;
   timelineEnd: string;
   onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
+  onAddClassAt: (day: WeekDay, startTime: string) => void;
 }) {
   const start = timeToMinutes(timelineStart);
   const end = timeToMinutes(timelineEnd);
@@ -234,7 +242,16 @@ function TimelineBackground({
   }
 
   return (
-    <div className="absolute inset-0 border-l border-slate-300">
+    <div
+      className="group absolute inset-0 cursor-crosshair border-l border-slate-300"
+      title={`เพิ่มรายวิชาใน${weekDays.find((item) => item.key === day)?.label ?? day}`}
+      onClick={(event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const rawMinutes = start + ((event.clientX - rect.left) / HOUR_COLUMN_WIDTH) * 60;
+        const snappedMinutes = Math.round(rawMinutes / DROP_STEP_MINUTES) * DROP_STEP_MINUTES;
+        onAddClassAt(day, minutesToTime(clamp(snappedMinutes, start, end - DROP_STEP_MINUTES)));
+      }}
+    >
       {units.map((time) => {
         const left = timeToTimelineOffset(time, timelineStart, HOUR_COLUMN_WIDTH);
         const isHour = time.endsWith(":00");
@@ -252,7 +269,7 @@ function TimelineBackground({
               if (payload.id) onDropClass(payload.id, day, time, payload.sourceDay);
             }}
             className={cn(
-              "absolute top-0 h-full border-r border-slate-100 transition-colors hover:bg-sky-50/60",
+              "pointer-events-none absolute top-0 h-full border-r border-slate-100 transition-colors group-hover:bg-sky-50/30",
               isHour && "border-l border-l-slate-300"
             )}
             style={{

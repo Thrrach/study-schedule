@@ -18,6 +18,8 @@ export function ClassCard({ item, compact, dragDay, onEdit, onDuplicate, onDelet
   return (
     <article
       draggable
+      title="ลากเพื่อย้ายเวลา หรือดับเบิลคลิกเพื่อแก้ไข"
+      onDoubleClick={() => onEdit(item)}
       onDragStart={(event) => {
         event.dataTransfer.setData("text/plain", item.id);
         event.dataTransfer.setData("application/json", JSON.stringify({ id: item.id, sourceDay: dragDay }));
@@ -33,7 +35,7 @@ export function ClassCard({ item, compact, dragDay, onEdit, onDuplicate, onDelet
         <div className="min-w-0 pr-2">
           <div className="flex items-center gap-1.5">
             <GripVertical className="h-4 w-4 shrink-0 text-slate-400 no-print" />
-            <p className={cn("truncate font-bold leading-none", compact ? "text-[28px]" : "text-xl")}>{item.courseCode}</p>
+            <p className="truncate text-xl font-bold leading-none">{item.courseCode}</p>
           </div>
           <p className={cn("mt-1 font-medium text-slate-700", compact ? "truncate text-base leading-5" : "line-clamp-2 text-sm")}>{item.courseName}</p>
         </div>
@@ -46,7 +48,7 @@ export function ClassCard({ item, compact, dragDay, onEdit, onDuplicate, onDelet
       </div>
       <div className="mt-1 min-h-0 space-y-0.5 text-sm leading-5 text-slate-600">
         <p>{item.startTime} - {item.endTime}</p>
-        <p className="truncate">{item.instructor}</p>
+        <p className="truncate">{[item.room, item.instructor].filter(Boolean).join(" • ")}</p>
         {!compact ? <p className="truncate">{item.room}</p> : null}
         {!compact && item.note ? <p className="line-clamp-2 text-slate-500">{item.note}</p> : null}
       </div>
@@ -56,13 +58,13 @@ export function ClassCard({ item, compact, dragDay, onEdit, onDuplicate, onDelet
           compact && "absolute bottom-1.5 right-1.5 rounded-md bg-white/90 shadow-sm ring-1 ring-slate-200"
         )}
       >
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEdit(item)} aria-label="Edit class">
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEdit(item)} aria-label="แก้ไขรายวิชา">
           <Pencil className="h-3.5 w-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDuplicate(item.id)} aria-label="Duplicate class">
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onDuplicate(item.id)} aria-label="ทำสำเนารายวิชา">
           <Copy className="h-3.5 w-3.5" />
         </Button>
-        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDelete(item.id)} aria-label="Delete class">
+        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDelete(item.id)} aria-label="ลบรายวิชา">
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>

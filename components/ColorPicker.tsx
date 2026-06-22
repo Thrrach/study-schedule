@@ -24,7 +24,7 @@ interface ColorPickerProps {
 export function ColorPicker({ value, onChange }: ColorPickerProps) {
   return (
     <div className="space-y-2">
-      <Label>Subject color</Label>
+      <Label>สีประจำวิชา</Label>
       <div className="flex flex-wrap items-center gap-2">
         {presetColors.map((color) => (
           <button
@@ -36,7 +36,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
             )}
             style={{ backgroundColor: color }}
             onClick={() => onChange(color)}
-            aria-label={`Use color ${color}`}
+            aria-label={`ใช้สี ${color}`}
           >
             {value === color ? <Check className="h-4 w-4 text-white" /> : null}
           </button>
@@ -46,7 +46,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
           type="color"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          aria-label="Custom subject color"
+          aria-label="เลือกสีประจำวิชาเอง"
         />
       </div>
     </div>
