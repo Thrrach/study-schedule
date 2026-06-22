@@ -1,6 +1,7 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { useState } from "react";
+import { Download, LoaderCircle } from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import type { ImageFormat } from "@/types/timetable";
 import { Button } from "@/components/ui/button";
@@ -11,34 +12,77 @@ interface ExportButtonProps {
 }
 
 export function ExportButton({ targetId, format }: ExportButtonProps) {
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
+
   async function exportImage() {
     const node = document.getElementById(targetId);
-    if (!node) return;
+    if (!node || exporting) return;
 
-    const options = {
-      cacheBust: true,
-      pixelRatio: 2,
-      backgroundColor: "#ffffff",
-      width: node.scrollWidth,
-      height: node.scrollHeight,
-      style: {
-        maxHeight: "none",
-        overflow: "visible"
-      }
-    };
-    const dataUrl =
-      format === "png" ? await htmlToImage.toPng(node, options) : await htmlToImage.toJpeg(node, { ...options, quality: 0.96 });
+    setExporting(true);
+    setExportError("");
+    node.dataset.exporting = "true";
 
-    const link = document.createElement("a");
-    link.download = `psu-timetable.${format}`;
-    link.href = dataUrl;
-    link.click();
+    try {
+      await document.fonts?.ready;
+      await nextPaint();
+
+      const width = Math.ceil(Math.max(node.scrollWidth, node.getBoundingClientRect().width));
+      const height = Math.ceil(Math.max(node.scrollHeight, node.getBoundingClientRect().height));
+      const options = {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        width,
+        height,
+        filter: (element: HTMLElement) => !element.classList?.contains("no-print"),
+        style: {
+          width: `${width}px`,
+          height: `${height}px`,
+          minWidth: "0",
+          maxWidth: "none",
+          maxHeight: "none",
+          overflow: "visible",
+          transform: "none"
+        }
+      };
+      const dataUrl =
+        format === "png"
+          ? await htmlToImage.toPng(node, options)
+          : await htmlToImage.toJpeg(node, { ...options, quality: 0.96 });
+
+      const link = document.createElement("a");
+      link.download = `psu-timetable.${format}`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Could not export timetable image", error);
+      setExportError("Export failed. Please try again.");
+    } finally {
+      delete node.dataset.exporting;
+      setExporting(false);
+    }
   }
 
   return (
-    <Button onClick={exportImage} variant="secondary">
-      <Download className="h-4 w-4" />
-      Export {format.toUpperCase()}
-    </Button>
+    <div className="space-y-2">
+      <Button onClick={exportImage} variant="secondary" disabled={exporting}>
+        {exporting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+        {exporting ? "Exporting..." : `Export ${format.toUpperCase()}`}
+      </Button>
+      {exportError ? (
+        <p className="text-sm text-destructive" role="alert">
+          {exportError}
+        </p>
+      ) : null}
+    </div>
   );
+}
+
+function nextPaint() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
 }
