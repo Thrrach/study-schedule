@@ -2,32 +2,31 @@
 
 import { useMemo } from "react";
 import { ClassCard } from "@/components/ClassCard";
-import {
-  buildHourLabels,
-  durationToWidth,
-  isValidTime,
-  minutesToTime,
-  timeToMinutes,
-  timeToTimelineOffset
-} from "@/lib/time";
+import { buildHourLabels, durationToWidth, minutesToTime, timeToMinutes, timeToTimelineOffset } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { safeDays } from "@/lib/subject-utils";
-import type { ClassItem, TimetableSettings, WeekDay } from "@/types/timetable";
+import type { ClassItem, WeekDay } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
 
-const TIMETABLE_START_HOUR = 8;
-const TIMETABLE_END_HOUR = 16;
-const HOUR_COLUMN_WIDTH = 180;
+const TIMETABLE_START = "08:00";
+const TIMETABLE_END = "16:00";
+const HOUR_COLUMN_WIDTH = 150;
+const DAY_COLUMN_WIDTH = 118;
 const DROP_STEP_MINUTES = 10;
-const CARD_HEIGHT = 100;
-const ROW_BASE_HEIGHT = 120;
+const CARD_HEIGHT = 136;
+const ROW_BASE_HEIGHT = 156;
 const ROW_VERTICAL_PADDING = 10;
 
 interface TimetableGridProps {
   classes: ClassItem[];
-  settings: TimetableSettings;
+  exportMeta: {
+    semester: string;
+    studentName: string;
+    exportedAt: string;
+  };
   onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
   onAddClassAt: (day: WeekDay, startTime: string) => void;
+  onView: (item: ClassItem) => void;
   onEdit: (item: ClassItem) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
@@ -35,60 +34,81 @@ interface TimetableGridProps {
 
 export function TimetableGrid({
   classes,
-  settings,
+  exportMeta,
   onDropClass,
   onAddClassAt,
+  onView,
   onEdit,
   onDuplicate,
   onDelete
 }: TimetableGridProps) {
   const safeClasses = Array.isArray(classes) ? classes : [];
-  const { timelineStart, timelineEnd, timelineWidth, hourLabels } = useMemo(
-    () => buildTimeline(settings),
-    [settings]
-  );
+  const { timelineStart, timelineEnd, timelineWidth, hourLabels } = useMemo(() => buildTimeline(), []);
+  const gridWidth = DAY_COLUMN_WIDTH + timelineWidth;
 
   return (
-    <section className="print-full overflow-hidden rounded-xl border bg-white shadow-sm">
-      <div className="flex flex-col justify-between gap-2 border-b bg-white px-4 py-3 sm:flex-row sm:items-end sm:px-5 sm:py-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Prince of Songkla University</p>
-          <h2 className="text-lg font-semibold text-slate-950 sm:text-xl">ตารางเรียนประจำสัปดาห์</h2>
-        </div>
-        <p className="text-xs text-slate-500 no-print">คลิกพื้นที่ว่างเพื่อเพิ่มวิชา • ลากการ์ดเพื่อย้ายเวลา</p>
-      </div>
-
-      <div className="max-h-[calc(100vh-180px)] overflow-auto scroll-smooth bg-white">
-        <div
-          id="timetable-export"
-          className="grid w-max min-w-full bg-white"
-          style={{ gridTemplateColumns: `116px ${timelineWidth}px` }}
-        >
-          <div
-            data-export-sticky
-            className="sticky left-0 top-0 z-30 border-b border-r border-slate-300 bg-slate-100 px-3 py-3"
-          />
-          <TimelineHeader hourLabels={hourLabels} timelineStart={timelineStart} width={timelineWidth} />
-
-          {weekDays.map((day) => (
-            <DayRow
-              key={day.key}
-              day={day.key}
-              dayLabel={day.label}
-              classes={safeClasses.filter((item) => safeDays(item.days).includes(day.key))}
-              timelineStart={timelineStart}
-              timelineEnd={timelineEnd}
-              timelineWidth={timelineWidth}
-              onDropClass={onDropClass}
-              onAddClassAt={onAddClassAt}
-              onEdit={onEdit}
-              onDuplicate={onDuplicate}
-              onDelete={onDelete}
+    <section className="print-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="max-h-[calc(100vh-220px)] overflow-auto scroll-smooth bg-white">
+        <div id="timetable-export" className="w-max min-w-full bg-white p-4" style={{ minWidth: gridWidth }}>
+          <ExportHeader meta={exportMeta} width={gridWidth} />
+          <div className="grid overflow-visible bg-white" style={{ gridTemplateColumns: `${DAY_COLUMN_WIDTH}px ${timelineWidth}px` }}>
+            <div
+              data-export-sticky
+              className="sticky left-0 top-0 z-30 border-b border-r border-slate-300 bg-slate-100 px-3 py-3"
             />
-          ))}
+            <TimelineHeader hourLabels={hourLabels} timelineStart={timelineStart} width={timelineWidth} />
+
+            {weekDays.map((day) => (
+              <DayRow
+                key={day.key}
+                day={day.key}
+                dayLabel={day.label}
+                classes={safeClasses.filter((item) => safeDays(item.days).includes(day.key))}
+                timelineStart={timelineStart}
+                timelineEnd={timelineEnd}
+                timelineWidth={timelineWidth}
+                onDropClass={onDropClass}
+                onAddClassAt={onAddClassAt}
+                onView={onView}
+                onEdit={onEdit}
+                onDuplicate={onDuplicate}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function ExportHeader({
+  meta,
+  width
+}: {
+  meta: TimetableGridProps["exportMeta"];
+  width: number;
+}) {
+  return (
+    <div className="mb-4 border-b border-slate-200 pb-4" style={{ width }}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase text-primary">Prince of Songkla University</p>
+          <h2 className="mt-1 text-2xl font-semibold text-slate-950">ตารางเรียน</h2>
+        </div>
+        <div className="grid gap-1 text-right text-sm text-slate-600">
+          <p>
+            <span className="font-semibold text-slate-800">ภาคการศึกษา:</span> {meta.semester || "-"}
+          </p>
+          <p>
+            <span className="font-semibold text-slate-800">ชื่อผู้เรียน:</span> {meta.studentName || "-"}
+          </p>
+          <p>
+            <span className="font-semibold text-slate-800">วันที่ Export:</span> {meta.exportedAt}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -102,11 +122,7 @@ function TimelineHeader({
   width: number;
 }) {
   return (
-    <div
-      data-export-sticky
-      className="sticky top-0 z-20 border-b border-r border-slate-300 bg-slate-100"
-      style={{ width }}
-    >
+    <div data-export-sticky className="sticky top-0 z-20 border-b border-r border-slate-300 bg-slate-100" style={{ width }}>
       <div className="relative min-h-14" style={{ width }}>
         {hourLabels.map((hour, index) => {
           const isEnd = index === hourLabels.length - 1;
@@ -142,6 +158,7 @@ function DayRow({
   timelineWidth,
   onDropClass,
   onAddClassAt,
+  onView,
   onEdit,
   onDuplicate,
   onDelete
@@ -154,6 +171,7 @@ function DayRow({
   timelineWidth: number;
   onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
   onAddClassAt: (day: WeekDay, startTime: string) => void;
+  onView: (item: ClassItem) => void;
   onEdit: (item: ClassItem) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
@@ -166,15 +184,12 @@ function DayRow({
     <>
       <div
         data-export-sticky
-        className="sticky left-0 z-10 flex items-center border-b border-r border-slate-300 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700"
+        className="sticky left-0 z-10 flex items-center justify-center border-b border-r border-slate-300 bg-slate-50 px-3 py-3 text-center text-sm font-semibold text-slate-700"
         style={{ minHeight: rowHeight }}
       >
         {dayLabel}
       </div>
-      <div
-        className="relative overflow-hidden border-b border-r border-slate-200 bg-white"
-        style={{ width: timelineWidth, height: rowHeight }}
-      >
+      <div className="relative overflow-visible border-b border-r border-slate-200 bg-white" style={{ width: timelineWidth, height: rowHeight }}>
         <TimelineBackground
           day={day}
           timelineStart={timelineStart}
@@ -190,12 +205,12 @@ function DayRow({
 
             const left = clamp(rawLeft, 0, timelineWidth);
             const right = clamp(rawRight, 0, timelineWidth);
-            const width = Math.max(28, right - left || durationToWidth(item.startTime, item.endTime, HOUR_COLUMN_WIDTH));
+            const width = Math.max(88, right - left || durationToWidth(item.startTime, item.endTime, HOUR_COLUMN_WIDTH));
 
             return (
               <div
-                key={item.id}
-                className="absolute z-[1] p-1"
+                key={`${day}-${item.id}`}
+                className="absolute z-[1] p-1.5"
                 style={{
                   left,
                   top: ROW_VERTICAL_PADDING + laneIndex * CARD_HEIGHT,
@@ -207,6 +222,7 @@ function DayRow({
                   item={item}
                   compact
                   dragDay={day}
+                  onView={onView}
                   onEdit={onEdit}
                   onDuplicate={onDuplicate}
                   onDelete={onDelete}
@@ -241,15 +257,26 @@ function TimelineBackground({
     units.push(minutesToTime(minute));
   }
 
+  function eventToTime(event: React.MouseEvent<HTMLDivElement> | React.DragEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const rawMinutes = start + ((event.clientX - rect.left) / HOUR_COLUMN_WIDTH) * 60;
+    const snappedMinutes = Math.round(rawMinutes / DROP_STEP_MINUTES) * DROP_STEP_MINUTES;
+    return minutesToTime(clamp(snappedMinutes, start, end - DROP_STEP_MINUTES));
+  }
+
   return (
     <div
       className="group absolute inset-0 cursor-crosshair border-l border-slate-300"
-      title={`เพิ่มรายวิชาใน${weekDays.find((item) => item.key === day)?.label ?? day}`}
-      onClick={(event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const rawMinutes = start + ((event.clientX - rect.left) / HOUR_COLUMN_WIDTH) * 60;
-        const snappedMinutes = Math.round(rawMinutes / DROP_STEP_MINUTES) * DROP_STEP_MINUTES;
-        onAddClassAt(day, minutesToTime(clamp(snappedMinutes, start, end - DROP_STEP_MINUTES)));
+      aria-label={`เพิ่มรายวิชาใน${weekDays.find((item) => item.key === day)?.label ?? day}`}
+      onClick={(event) => onAddClassAt(day, eventToTime(event))}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        const payload = readDragPayload(event.dataTransfer);
+        if (payload.id) onDropClass(payload.id, day, eventToTime(event), payload.sourceDay);
       }}
     >
       {units.map((time) => {
@@ -259,15 +286,6 @@ function TimelineBackground({
         return (
           <div
             key={`${day}-${time}`}
-            onDragOver={(event) => {
-              event.preventDefault();
-              event.dataTransfer.dropEffect = "move";
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-              const payload = readDragPayload(event.dataTransfer);
-              if (payload.id) onDropClass(payload.id, day, time, payload.sourceDay);
-            }}
             className={cn(
               "pointer-events-none absolute top-0 h-full border-r border-slate-100 transition-colors group-hover:bg-sky-50/30",
               isHour && "border-l border-l-slate-300"
@@ -285,7 +303,7 @@ function TimelineBackground({
 
 function assignLanes(classes: ClassItem[]) {
   const lanes: ClassItem[][] = [];
-  const sorted = [...(Array.isArray(classes) ? classes : [])].sort((a, b) => a.createdAt - b.createdAt);
+  const sorted = [...(Array.isArray(classes) ? classes : [])].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
   sorted.forEach((item) => {
     const targetLane = lanes.find((lane) =>
@@ -310,17 +328,10 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function buildTimeline(settings: TimetableSettings) {
-  const fallbackStart = `${TIMETABLE_START_HOUR.toString().padStart(2, "0")}:00`;
-  const fallbackEnd = `${TIMETABLE_END_HOUR.toString().padStart(2, "0")}:00`;
-  const settingsStart = isValidTime(settings.startTime) ? settings.startTime : fallbackStart;
-  const settingsEnd = isValidTime(settings.endTime) ? settings.endTime : fallbackEnd;
-  const hasValidRange = timeToMinutes(settingsEnd) > timeToMinutes(settingsStart);
-  const start = hasValidRange ? settingsStart : fallbackStart;
-  const end = hasValidRange ? settingsEnd : fallbackEnd;
-  const timelineStart = start;
-  const timelineEnd = end;
-  const timelineWidth = Math.max(HOUR_COLUMN_WIDTH, durationToWidth(timelineStart, timelineEnd, HOUR_COLUMN_WIDTH));
+function buildTimeline() {
+  const timelineStart = TIMETABLE_START;
+  const timelineEnd = TIMETABLE_END;
+  const timelineWidth = durationToWidth(timelineStart, timelineEnd, HOUR_COLUMN_WIDTH);
 
   return {
     timelineStart,
