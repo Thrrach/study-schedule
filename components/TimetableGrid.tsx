@@ -184,10 +184,13 @@ function DayRow({
     <>
       <div
         data-export-sticky
-        className="sticky left-0 z-10 flex items-center justify-center border-b border-r border-slate-300 bg-slate-50 px-3 py-3 text-center text-sm font-semibold text-slate-700"
+        className="sticky left-0 z-10 flex flex-col items-center justify-center gap-2 border-b border-r border-slate-300 bg-slate-50 px-3 py-3 text-center text-sm font-semibold text-slate-700"
         style={{ minHeight: rowHeight }}
       >
-        {dayLabel}
+        <span>{dayLabel}</span>
+        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">
+          {classes.length} รายวิชา
+        </span>
       </div>
       <div className="relative overflow-visible border-b border-r border-slate-200 bg-white" style={{ width: timelineWidth, height: rowHeight }}>
         <TimelineBackground
