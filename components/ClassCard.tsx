@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, GripVertical, Pencil, Trash2 } from "lucide-react";
+import { Clock3, Copy, GripVertical, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSubjectTheme } from "@/lib/subject-theme";
 import { safeDays } from "@/lib/subject-utils";
@@ -23,6 +23,10 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
   const dayLabels = safeDays(item.days)
     .map((day) => weekDays.find((weekDay) => weekDay.key === day)?.shortLabel ?? day)
     .join(", ");
+  const metaItems = [
+    item.room ? { icon: <MapPin className="h-3.5 w-3.5" />, value: item.room } : null,
+    item.instructor ? { icon: <UserRound className="h-3.5 w-3.5" />, value: item.instructor } : null
+  ].filter(Boolean) as Array<{ icon: React.ReactNode; value: string }>;
 
   function openDetail() {
     onView(item);
@@ -55,25 +59,48 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
         event.dataTransfer.effectAllowed = "move";
       }}
       className={cn(
-        "group relative flex min-h-[90px] flex-col items-center justify-center rounded border px-3 py-3 text-center shadow-sm ring-1 ring-slate-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,.12)]",
-        compact ? "h-full pr-10" : "space-y-2 p-4"
+        "group relative flex min-h-[90px] flex-col rounded border px-3 py-3 text-left shadow-sm ring-1 ring-slate-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,.12)]",
+        compact ? "h-full gap-2 pr-10" : "gap-3 p-4"
       )}
       style={{ backgroundColor: theme.background, borderColor: theme.border, color: theme.text }}
     >
       <GripVertical className="absolute left-2 top-2 h-4 w-4 text-slate-500/70 no-print" aria-hidden="true" />
-      <span className="absolute right-2 top-2 rounded border bg-white/70 px-1.5 py-0.5 text-[11px] font-semibold leading-none">
-        Sec {item.section || "-"}
-      </span>
 
-      <div className="space-y-1 overflow-visible">
-        <p className="break-words text-lg font-bold leading-tight">{item.courseCode}</p>
-        <p className="whitespace-normal break-words text-sm font-semibold leading-5">{item.courseName}</p>
-        <p className="whitespace-normal break-words text-xs font-medium leading-5">
-          {[item.room, item.instructor].filter(Boolean).join(" | ") || "ยังไม่ระบุห้อง/อาจารย์"}
-        </p>
-        <p className="text-xs font-semibold leading-4 text-slate-600">
+      <div className="flex min-w-0 items-start justify-between gap-2 pl-4">
+        <div className="min-w-0">
+          <p className={cn("break-words font-bold leading-tight", compact ? "text-base" : "text-lg")}>{item.courseCode}</p>
+          <p className="mt-1 overflow-hidden text-sm font-semibold leading-5 [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box]">
+            {item.courseName}
+          </p>
+        </div>
+        <span className="shrink-0 rounded border bg-white/75 px-1.5 py-0.5 text-[11px] font-semibold leading-none">
+          Sec {item.section || "-"}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 rounded-full bg-white/75 px-2 py-1 text-xs font-semibold leading-none text-slate-700 shadow-sm ring-1 ring-black/5">
+          <Clock3 className="h-3.5 w-3.5" />
           {item.startTime} - {item.endTime}
-        </p>
+        </span>
+        {dayLabels ? (
+          <span className="rounded-full bg-white/60 px-2 py-1 text-xs font-medium leading-none text-slate-600 ring-1 ring-black/5">
+            {dayLabels}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="min-w-0 space-y-1 text-xs font-medium leading-4 text-slate-700">
+        {metaItems.length ? (
+          metaItems.map((meta) => (
+            <p key={meta.value} className="flex min-w-0 items-center gap-1.5">
+              <span className="shrink-0 text-slate-500">{meta.icon}</span>
+              <span className="truncate">{meta.value}</span>
+            </p>
+          ))
+        ) : (
+          <p className="text-slate-500">ยังไม่ระบุห้อง/อาจารย์</p>
+        )}
       </div>
 
       <div className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-30 hidden w-64 -translate-x-1/2 rounded-md border bg-white p-3 text-left text-xs leading-5 text-slate-700 shadow-lg group-hover:block group-focus-visible:block no-print">
