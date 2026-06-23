@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "จัดตารางเรียน PSU",
-  description: "สร้าง จัดเวลา และส่งออกตารางเรียนมหาวิทยาลัยได้อย่างง่ายดาย"
+  title: "PSU Timetable Builder",
+  description: "Build and export a clean university class timetable."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

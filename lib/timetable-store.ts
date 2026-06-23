@@ -61,7 +61,7 @@ export const useTimetableStore = create<TimetableState>()(
             {
               ...source,
               id: uid(),
-              courseName: source.courseName ? `${source.courseName} (สำเนา)` : "รายวิชาไม่มีชื่อ (สำเนา)",
+              courseName: source.courseName ? `${source.courseName} (copy)` : "Untitled class (copy)",
               createdAt: timestamp,
               updatedAt: timestamp
             }

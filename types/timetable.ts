@@ -42,9 +42,9 @@ export interface TimetableBackup {
 }
 
 export const weekDays: Array<{ key: Day; label: string; shortLabel: string }> = [
-  { key: "Monday", label: "วันจันทร์", shortLabel: "จ." },
-  { key: "Tuesday", label: "วันอังคาร", shortLabel: "อ." },
-  { key: "Wednesday", label: "วันพุธ", shortLabel: "พ." },
-  { key: "Thursday", label: "วันพฤหัสบดี", shortLabel: "พฤ." },
-  { key: "Friday", label: "วันศุกร์", shortLabel: "ศ." }
+  { key: "Monday", label: "Monday", shortLabel: "Mon" },
+  { key: "Tuesday", label: "Tuesday", shortLabel: "Tue" },
+  { key: "Wednesday", label: "Wednesday", shortLabel: "Wed" },
+  { key: "Thursday", label: "Thursday", shortLabel: "Thu" },
+  { key: "Friday", label: "Friday", shortLabel: "Fri" }
 ];
