@@ -10,6 +10,7 @@ interface TimeSlotProps {
   time: string;
   classes: ClassItem[];
   onDropClass: (id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) => void;
+  onView?: (item: ClassItem) => void;
   onEdit: (item: ClassItem) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
@@ -20,6 +21,7 @@ export function TimeSlot({
   time,
   classes,
   onDropClass,
+  onView,
   onEdit,
   onDuplicate,
   onDelete
@@ -48,6 +50,7 @@ export function TimeSlot({
             item={item}
             compact
             dragDay={day}
+            onView={onView ?? onEdit}
             onEdit={onEdit}
             onDuplicate={onDuplicate}
             onDelete={onDelete}

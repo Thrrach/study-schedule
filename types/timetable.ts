@@ -30,6 +30,8 @@ export interface TimetableSettings {
   endTime: string;
   intervalMinutes: number;
   timeSlots: string[];
+  semester?: string;
+  studentName?: string;
 }
 
 export interface TimetableBackup {
@@ -40,9 +42,9 @@ export interface TimetableBackup {
 }
 
 export const weekDays: Array<{ key: Day; label: string; shortLabel: string }> = [
-  { key: "Monday", label: "Monday", shortLabel: "Mon" },
-  { key: "Tuesday", label: "Tuesday", shortLabel: "Tue" },
-  { key: "Wednesday", label: "Wednesday", shortLabel: "Wed" },
-  { key: "Thursday", label: "Thursday", shortLabel: "Thu" },
-  { key: "Friday", label: "Friday", shortLabel: "Fri" }
+  { key: "Monday", label: "วันจันทร์", shortLabel: "จ." },
+  { key: "Tuesday", label: "วันอังคาร", shortLabel: "อ." },
+  { key: "Wednesday", label: "วันพุธ", shortLabel: "พ." },
+  { key: "Thursday", label: "วันพฤหัสบดี", shortLabel: "พฤ." },
+  { key: "Friday", label: "วันศุกร์", shortLabel: "ศ." }
 ];
