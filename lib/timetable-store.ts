@@ -163,12 +163,16 @@ function normalizeSettings(rawSettings: unknown, fallback: TimetableSettings): T
   const hasCustomSlots = Object.prototype.hasOwnProperty.call(raw, "timeSlots");
   const timeSlots = hasCustomSlots ? normalizeTimeSlots(raw.timeSlots) : normalizeTimeSlots(fallback.timeSlots);
   const intervalMinutes = normalizeInterval(raw.intervalMinutes, fallback.intervalMinutes);
+  const semester = stringValue(raw.semester, fallback.semester ?? "");
+  const studentName = stringValue(raw.studentName, fallback.studentName ?? "");
 
   if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
     return {
       ...fallback,
       intervalMinutes,
-      timeSlots
+      timeSlots,
+      semester,
+      studentName
     };
   }
 
@@ -176,7 +180,9 @@ function normalizeSettings(rawSettings: unknown, fallback: TimetableSettings): T
     startTime,
     endTime,
     intervalMinutes,
-    timeSlots
+    timeSlots,
+    semester,
+    studentName
   };
 }
 
@@ -190,4 +196,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asPartialState(value: unknown): Partial<Pick<TimetableState, "classes" | "settings">> {
   return isRecord(value) ? value : {};
+}
+
+function stringValue(value: unknown, fallback = "") {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return fallback;
+  return String(value);
 }

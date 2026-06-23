@@ -30,6 +30,8 @@ export interface TimetableSettings {
   endTime: string;
   intervalMinutes: number;
   timeSlots: string[];
+  semester?: string;
+  studentName?: string;
 }
 
 export interface TimetableBackup {
