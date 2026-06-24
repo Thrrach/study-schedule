@@ -68,7 +68,13 @@ export function ExportButton({ targetId, format }: ExportButtonProps) {
 
   return (
     <div className="space-y-2">
-      <Button onClick={exportImage} variant="secondary" disabled={exporting} aria-label={`ดาวน์โหลดตารางเป็น ${format.toUpperCase()}`}>
+      <Button
+        onClick={exportImage}
+        variant="secondary"
+        disabled={exporting}
+        className="w-full sm:w-auto"
+        aria-label={`ดาวน์โหลดตารางเป็น ${format.toUpperCase()}`}
+      >
         {exporting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
         {exporting ? "กำลังส่งออก..." : "ดาวน์โหลด"}
       </Button>
