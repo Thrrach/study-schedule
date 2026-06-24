@@ -39,6 +39,10 @@ body {
   transform: none !important;
 }
 
+[data-exporting="true"] .export-only {
+  display: block !important;
+}
+
 [data-exporting="true"],
 [data-exporting="true"] * {
   animation: none !important;

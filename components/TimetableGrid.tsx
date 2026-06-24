@@ -13,8 +13,8 @@ const TIMETABLE_END = "16:00";
 const HOUR_COLUMN_WIDTH = 150;
 const DAY_COLUMN_WIDTH = 118;
 const DROP_STEP_MINUTES = 10;
-const CARD_HEIGHT = 136;
-const ROW_BASE_HEIGHT = 156;
+const CARD_HEIGHT = 184;
+const ROW_BASE_HEIGHT = 204;
 const ROW_VERTICAL_PADDING = 10;
 
 interface TimetableGridProps {
@@ -90,7 +90,7 @@ function ExportHeader({
   width: number;
 }) {
   return (
-    <div className="mb-4 border-b border-slate-200 pb-4" style={{ width }}>
+    <div className="export-only mb-4 hidden border-b border-slate-200 pb-4" style={{ width }}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase text-primary">Prince of Songkla University</p>
