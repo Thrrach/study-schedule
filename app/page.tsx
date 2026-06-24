@@ -163,13 +163,13 @@ export default function Home() {
               <h1 className="text-2xl font-semibold tracking-tight text-slate-950">ตารางเรียน</h1>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
               <Select
                 value={settings.semester || "none"}
                 onValueChange={(semester) => updateSettings({ ...settings, semester: semester === "none" ? "" : semester })}
               >
-                <SelectTrigger className="w-[190px]" aria-label="ภาคการศึกษา">
-                  <SelectValue placeholder="ภาคการศึกษา" />
+                <SelectTrigger className="w-full sm:w-[190px]" aria-label="ภาคการศึกษา">
+                  <SelectValue placeholder="ภาคการศึกษา">{settings.semester || "ภาคการศึกษา"}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">ภาคการศึกษา</SelectItem>
@@ -181,12 +181,12 @@ export default function Home() {
                 </SelectContent>
               </Select>
 
-              <div className="inline-flex rounded-md border bg-slate-50 p-1" aria-label="มุมมองตารางเรียน">
+              <div className="inline-flex w-full rounded-md border bg-slate-50 p-1 sm:w-auto" aria-label="มุมมองตารางเรียน">
                 <Button
                   type="button"
                   variant={viewMode === "grid" ? "secondary" : "ghost"}
                   size="sm"
-                  className="h-8"
+                  className="h-8 flex-1 sm:flex-none"
                   onClick={() => setViewMode("grid")}
                 >
                   <Grid3X3 className="h-4 w-4" />
@@ -196,7 +196,7 @@ export default function Home() {
                   type="button"
                   variant={viewMode === "list" ? "secondary" : "ghost"}
                   size="sm"
-                  className="h-8"
+                  className="h-8 flex-1 sm:flex-none"
                   onClick={() => setViewMode("list")}
                 >
                   <List className="h-4 w-4" />
@@ -205,7 +205,7 @@ export default function Home() {
               </div>
 
               <ExportButton targetId="timetable-export" format={imageFormat} />
-              <Button type="button" variant="outline" onClick={() => setToolsOpen(true)}>
+              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setToolsOpen(true)}>
                 <SlidersHorizontal className="h-4 w-4" />
                 เครื่องมือ
               </Button>
