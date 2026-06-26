@@ -17,7 +17,7 @@ const dayAliases: Record<string, Day> = {
   thu: "Thursday",
   Friday: "Friday",
   friday: "Friday",
-  fri: "Friday"
+  fri: "Friday",
 };
 
 export type RawClassItem = Partial<ClassItem> & {
