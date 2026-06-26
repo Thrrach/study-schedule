@@ -13,12 +13,14 @@ const presetColors = [
   "#dc2626",
   "#16a34a",
   "#0891b2",
-  "#be123c"
+  "#be123c",
+  
 ];
 
 interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
+
 }
 
 export function ColorPicker({ value, onChange }: ColorPickerProps) {
