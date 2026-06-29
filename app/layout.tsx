@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "จัดตารางเรียน PSU",
+  title: "จัดตารางเรียน PSU (University Schedule Planner)",
   description: "สร้าง จัดเวลา และส่งออกตารางเรียนมหาวิทยาลัยได้อย่างง่ายดาย"
 };
 

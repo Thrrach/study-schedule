@@ -162,9 +162,9 @@ export default function Home() {
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-primary">
                 <CalendarDays className="h-4 w-4" />
-                PSU Timetable
+                PSU Timetable Planner
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">ตารางเรียน</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">ตารางเรียน </h1>
             </div>
 
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
@@ -292,7 +292,7 @@ export default function Home() {
             <section className="rounded-lg border bg-slate-50/70 p-4">
               <div className="mb-4 flex items-center gap-2 font-semibold">
                 <Settings className="h-4 w-4" />
-                ข้อมูลตารางและช่วงเวลา
+                ข้อมูลตารางและช่วงเวลา 
               </div>
               <SettingsForm settings={settings} onChange={updateSettings} semesterOptions={semesterOptions} />
             </section>
