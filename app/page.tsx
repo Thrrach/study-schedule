@@ -34,6 +34,11 @@ import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normal
 import { cn } from "@/lib/utils";
 import { safeDays, subjectsShareDay } from "@/lib/subject-utils";
 import type { ClassItem, ImageFormat, TimetableBackup, TimetableSettings } from "@/types/timetable";
+import dayjs from "dayjs";
+import buddhistEra from "dayjs/plugin/buddhistEra";
+import "dayjs/locale/th";
+
+dayjs.extend(buddhistEra);
 
 type ClassPayload = Omit<ClassItem, "id" | "createdAt" | "updatedAt">;
 type ViewMode = "grid" | "list";
@@ -67,6 +72,7 @@ export default function Home() {
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [importError, setImportError] = useState("");
+  const [exportDate, setExportDate] = useState(() => formatExportDate(dayjs()));
   const displayedSettings = useMemo(
     () => ({ ...settings, startTime: DISPLAY_START, endTime: DISPLAY_END, timeSlots: defaultSettings.timeSlots }),
     [settings]
@@ -74,8 +80,6 @@ export default function Home() {
   const timeOptions = useMemo(() => generateTimeSlots(displayedSettings), [displayedSettings]);
   const safeClasses = useMemo(() => (Array.isArray(classes) ? classes : []), [classes]);
   const semesterOptions = useMemo(() => buildSemesterOptions(settings.semester), [settings.semester]);
-  const exportDate = useMemo(() => new Date().toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" }), []);
-
   const overlaps = draft ? findOverlaps(draft, editingClass?.id) : [];
   const totalOverlaps = useMemo(
     () =>
@@ -204,7 +208,11 @@ export default function Home() {
                 </Button>
               </div>
 
-              <ExportButton targetId="timetable-export" format={imageFormat} />
+              <ExportButton
+                targetId="timetable-export"
+                format={imageFormat}
+                onBeforeExport={() => setExportDate(formatExportDate(dayjs()))}
+              />
               <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setToolsOpen(true)}>
                 <SlidersHorizontal className="h-4 w-4" />
                 เครื่องมือ
@@ -308,7 +316,11 @@ export default function Home() {
                     <SelectItem value="jpeg">รูปภาพ JPEG</SelectItem>
                   </SelectContent>
                 </Select>
-                <ExportButton targetId="timetable-export" format={imageFormat} />
+                <ExportButton
+                  targetId="timetable-export"
+                  format={imageFormat}
+                  onBeforeExport={() => setExportDate(formatExportDate(dayjs()))}
+                />
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" onClick={exportJson}>
                     <FileDown className="h-4 w-4" />
@@ -635,4 +647,8 @@ function normalizeImport(value: RawTimetableImport): TimetableBackup {
     settings: value.settings ?? defaultSettings,
     classes: rawClasses as TimetableBackup["classes"]
   };
+}
+
+function formatExportDate(date: dayjs.Dayjs) {
+  return date.locale("th").format("D MMMM BBBB HH:mm");
 }

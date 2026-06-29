@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 interface ExportButtonProps {
   targetId: string;
   format: ImageFormat;
+  onBeforeExport?: () => void;
 }
 
-export function ExportButton({ targetId, format }: ExportButtonProps) {
+export function ExportButton({ targetId, format, onBeforeExport }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
@@ -22,6 +23,7 @@ export function ExportButton({ targetId, format }: ExportButtonProps) {
     setExporting(true);
     setExportError("");
     node.dataset.exporting = "true";
+    onBeforeExport?.();
 
     try {
       await document.fonts?.ready;
