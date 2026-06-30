@@ -78,7 +78,7 @@ export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailD
                 <StickyNote className="h-4 w-4" />
                 คำอธิบายรายวิชา
               </dt>
-              <dd className="mt-2 text-sm leading-6 text-slate-600">{item.note || "ไม่มีคำอธิบายเพิ่มเติม"}</dd>
+              <dd className="mt-2 text-sm leading-6 text-slate-600">{item.note || "ยังไม่มีคำอธิบายเพิ่มเติม"}</dd>
             </div>
           </div>
         ) : null}
