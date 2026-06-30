@@ -80,7 +80,7 @@ export function TimetableListView({ classes, onView }: TimetableListViewProps) {
                   );
                 })
               ) : (
-                <div className="px-4 py-5 text-sm text-slate-500">ไม่มีรายวิชาในวันนี้</div>
+                <div className="px-4 py-5 text-sm text-slate-500">วันนี้ไม่มีรายวิชา</div>
               )}
             </div>
           </div>
