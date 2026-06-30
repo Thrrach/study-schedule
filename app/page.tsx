@@ -164,7 +164,7 @@ export default function Home() {
                 <CalendarDays className="h-4 w-4" />
                 PSU Timetable Planner
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">ตารางเรียน </h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">ตารางเรียนของคุณ</h1>
             </div>
 
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
@@ -172,11 +172,11 @@ export default function Home() {
                 value={settings.semester || "none"}
                 onValueChange={(semester) => updateSettings({ ...settings, semester: semester === "none" ? "" : semester })}
               >
-                <SelectTrigger className="w-full sm:w-[190px]" aria-label="ภาคการศึกษา">
-                  <SelectValue placeholder="ภาคการศึกษา">{settings.semester || "ภาคการศึกษา"}</SelectValue>
+                <SelectTrigger className="w-full sm:w-[190px]" aria-label="ภาคเรียน">
+                  <SelectValue placeholder="ภาคเรียน">{settings.semester || "ภาคเรียน"}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">ภาคการศึกษา</SelectItem>
+                  <SelectItem value="none">ภาคเรียน</SelectItem>
                   {semesterOptions.map((semester) => (
                     <SelectItem key={semester} value={semester}>
                       {semester}
@@ -223,13 +223,13 @@ export default function Home() {
 
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 no-print">
           <Metric label="รายวิชา" value={safeClasses.length.toString()} />
-          <Metric label="เวลาชนกัน" value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
-          <Metric label="ช่วงเวลาแสดงผล" value={`${DISPLAY_START}-${DISPLAY_END}`} />
+          <Metric label="ตารางชนกัน" value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
+          <Metric label="ช่วงเวลาที่แสดง" value={`${DISPLAY_START}-${DISPLAY_END}`} />
           <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold">บันทึกแล้ว</p>
-              <p className="text-xs text-slate-500">เก็บอัตโนมัติในเครื่องนี้</p>
+              <p className="text-sm font-semibold">บันทึกอัตโนมัติแล้ว</p>
+              <p className="text-xs text-slate-500">ข้อมูลจะเก็บไว้ในเครื่องนี้โดยอัตโนมัติ</p>
             </div>
           </div>
         </section>
@@ -286,34 +286,34 @@ export default function Home() {
       <Dialog open={toolsOpen} onOpenChange={setToolsOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>ตั้งค่าและจัดการข้อมูล</DialogTitle>
+            <DialogTitle>ตั้งค่าและจัดการตาราง</DialogTitle>
           </DialogHeader>
           <div className="grid gap-5 md:grid-cols-2">
             <section className="rounded-lg border bg-slate-50/70 p-4">
               <div className="mb-4 flex items-center gap-2 font-semibold">
                 <Settings className="h-4 w-4" />
-                ข้อมูลตารางและช่วงเวลา 
+                การตั้งค่าตารางและช่วงเวลา
               </div>
               <SettingsForm settings={settings} onChange={updateSettings} semesterOptions={semesterOptions} />
             </section>
             <section className="rounded-lg border bg-slate-50/70 p-4">
               <div className="mb-1 flex items-center gap-2 font-semibold">
                 <HardDrive className="h-4 w-4" />
-                เครื่องมือรายวิชาและส่งออก
+                จัดการรายวิชาและส่งออก
               </div>
-              <p className="mb-4 text-sm text-slate-500">เพิ่มรายวิชา ดาวน์โหลดรูปตาราง หรือเก็บไฟล์สำรอง JSON ไว้ใช้กับเครื่องอื่น</p>
+              <p className="mb-4 text-sm text-slate-500">เพิ่มรายวิชา ส่งออกรูปตาราง หรือสำรองข้อมูล JSON ไว้สำหรับย้ายไปใช้อีกเครื่อง</p>
               <div className="space-y-3">
                 <Button onClick={() => openNewForm()} className="w-full justify-start">
                   <Plus className="h-4 w-4" />
                   เพิ่มรายวิชา
                 </Button>
                 <Select value={imageFormat} onValueChange={(value) => setImageFormat(value as ImageFormat)}>
-                  <SelectTrigger aria-label="ชนิดไฟล์รูปภาพ">
+                  <SelectTrigger aria-label="รูปแบบไฟล์ภาพ">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="png">รูปภาพ PNG</SelectItem>
-                    <SelectItem value="jpeg">รูปภาพ JPEG</SelectItem>
+                    <SelectItem value="png">PNG</SelectItem>
+                    <SelectItem value="jpeg">JPEG</SelectItem>
                   </SelectContent>
                 </Select>
                 <ExportButton
@@ -324,11 +324,11 @@ export default function Home() {
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" onClick={exportJson}>
                     <FileDown className="h-4 w-4" />
-                    สำรอง JSON
+                    สำรองข้อมูล JSON
                   </Button>
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                     <FileUp className="h-4 w-4" />
-                    นำเข้า
+                    นำเข้าข้อมูล
                   </Button>
                 </div>
                 <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={importJson} />
@@ -355,12 +355,12 @@ export default function Home() {
       <Dialog open={Boolean(classToDelete)} onOpenChange={(open) => !open && setClassToDelete(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>ลบรายวิชานี้หรือไม่?</DialogTitle>
+            <DialogTitle>ต้องการลบรายวิชานี้ใช่ไหม?</DialogTitle>
           </DialogHeader>
           <div className="flex gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-900">
             <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" />
             <p>
-              {classToDelete?.courseCode} {classToDelete?.courseName} จะถูกนำออกจากทุกวันที่เลือกไว้
+              {classToDelete?.courseCode} {classToDelete?.courseName} จะถูกลบออกจากทุกวันที่เลือกไว้
             </p>
           </div>
           <div className="flex justify-end gap-2">
@@ -381,9 +381,9 @@ export default function Home() {
       <Dialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>คืนค่าข้อมูลตัวอย่างหรือไม่?</DialogTitle>
+            <DialogTitle>ต้องการคืนค่าข้อมูลตัวอย่างใช่ไหม?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-slate-600">รายวิชาและการตั้งค่าปัจจุบันจะถูกแทนที่ด้วยข้อมูลตัวอย่าง แนะนำให้สำรอง JSON ก่อนหากยังต้องการเก็บไว้</p>
+          <p className="text-sm text-slate-600">รายวิชาและการตั้งค่าปัจจุบันจะถูกแทนที่ด้วยข้อมูลตัวอย่าง แนะนำให้สำรองข้อมูล JSON ก่อน หากยังต้องการเก็บไว้</p>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setResetConfirmOpen(false)}>ยกเลิก</Button>
             <Button
@@ -456,7 +456,7 @@ function SettingsForm({
         <Field label="ชื่อผู้เรียน">
           <Input value={settings.studentName ?? ""} onChange={(event) => onChange({ ...settings, studentName: event.target.value })} placeholder="เช่น นายสมชาย ใจดี" />
         </Field>
-        <Field label="ภาคการศึกษา">
+        <Field label="ภาคเรียน">
           <Select
             value={settings.semester || "none"}
             onValueChange={(semester) => onChange({ ...settings, semester: semester === "none" ? "" : semester })}
@@ -482,7 +482,7 @@ function SettingsForm({
       </div>
 
       <div className="rounded-md border border-sky-100 bg-sky-50 p-3 text-sm text-sky-900">
-        ตารางบนหน้าเว็บและไฟล์รูปจะแสดงช่วงเวลา {DISPLAY_START}-{DISPLAY_END} เสมอ
+        ตารางบนหน้าจอและไฟล์รูปจะยึดช่วงเวลา {DISPLAY_START}-{DISPLAY_END} เสมอ
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -526,26 +526,26 @@ function SettingsForm({
         />
       </Field>
       <Button type="button" variant="outline" className="w-full" onClick={() => setSlots(generateTimeSlots({ ...settings, timeSlots: [] }))}>
-        สร้างช่วงเวลาใหม่
+        สร้างช่วงเวลาอีกครั้ง
       </Button>
       <details className="group rounded-lg border bg-white p-3">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">กำหนดช่วงเวลาเอง (ขั้นสูง)</summary>
+        <summary className="cursor-pointer text-sm font-medium text-slate-700">กำหนดช่วงเวลาเอง</summary>
         <div className="mt-3 space-y-2">
           <div className="flex gap-2">
             <Input type="time" value={newSlot} onChange={(event) => setNewSlot(event.target.value)} />
             <Button type="button" variant="secondary" onClick={() => isValidTime(newSlot) && setSlots([...slots, newSlot])}>
               <Plus className="h-4 w-4" />
-              เพิ่ม
+              เพิ่มช่วงเวลา
             </Button>
           </div>
           <div className="max-h-72 space-y-2 overflow-auto pr-1">
             {slots.map((slot, index) => (
               <div key={`${slot}-${index}`} className="flex items-center gap-2 rounded-md border bg-slate-50 p-2">
                 <Input type="time" value={slot} onChange={(event) => updateSlot(index, event.target.value)} className="h-8" />
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveSlot(index, -1)} disabled={index === 0} aria-label="Move time slot up">
+                <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveSlot(index, -1)} disabled={index === 0} aria-label="เลื่อนช่วงเวลาขึ้น">
                   <ArrowUp className="h-4 w-4" />
                 </Button>
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveSlot(index, 1)} disabled={index === slots.length - 1} aria-label="Move time slot down">
+                <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveSlot(index, 1)} disabled={index === slots.length - 1} aria-label="เลื่อนช่วงเวลาลง">
                   <ArrowDown className="h-4 w-4" />
                 </Button>
                 <Button
@@ -555,7 +555,7 @@ function SettingsForm({
                   className="h-8 w-8 text-destructive"
                   onClick={() => setSlots(slots.filter((_, slotIndex) => slotIndex !== index))}
                   disabled={slots.length <= 1}
-                  aria-label="Remove time slot"
+                  aria-label="ลบช่วงเวลา"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -564,7 +564,7 @@ function SettingsForm({
           </div>
         </div>
       </details>
-      {invalidRange ? <p className="text-sm text-destructive">เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม</p> : null}
+      {invalidRange ? <p className="text-sm text-destructive">เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</p> : null}
     </div>
   );
 }

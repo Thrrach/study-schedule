@@ -98,13 +98,13 @@ function ExportHeader({
         </div>
         <div className="grid gap-1 text-right text-sm text-slate-600">
           <p>
-            <span className="font-semibold text-slate-800">ภาคการศึกษา:</span> {meta.semester || "-"}
+            <span className="font-semibold text-slate-800">ภาคเรียน:</span> {meta.semester || "-"}
           </p>
           <p>
             <span className="font-semibold text-slate-800">ชื่อผู้เรียน:</span> {meta.studentName || "-"}
           </p>
           <p>
-            <span className="font-semibold text-slate-800">วันที่ Export:</span> {meta.exportedAt}
+            <span className="font-semibold text-slate-800">วันที่ส่งออก:</span> {meta.exportedAt}
           </p>
         </div>
       </div>

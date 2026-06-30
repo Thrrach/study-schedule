@@ -110,7 +110,7 @@ export function ClassForm({
         if (!hasErrors) onSubmit({ ...value, days: selectedDays });
       }}
     >
-      <p className="-mt-1 text-sm text-slate-500">กรอกข้อมูลหลักก่อน ส่วนผู้สอน ห้อง และหมายเหตุสามารถเพิ่มภายหลังได้</p>
+      <p className="-mt-1 text-sm text-slate-500">กรอกข้อมูลหลักก่อน แล้วค่อยเติมผู้สอน ห้อง และหมายเหตุภายหลังได้</p>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="รหัสวิชา" error={submitted && errors.courseCode ? "จำเป็น" : undefined}>
@@ -214,7 +214,7 @@ export function ClassForm({
         <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            เวลาชนกับวิชา {(Array.isArray(overlaps) ? overlaps : []).map((item) => item.courseCode).join(", ")} แต่ยังสามารถบันทึกได้ โดยตารางจะแยกเป็นอีกแถวให้
+            เวลาชนกับวิชา {(Array.isArray(overlaps) ? overlaps : []).map((item) => item.courseCode).join(", ")} แต่ยังบันทึกได้ โดยระบบจะแยกเป็นอีกแถวให้
           </p>
         </div>
       ) : null}
