@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "จัดตารางเรียน PSU",
-  description: "วางแผน จัดเวลา และส่งออกตารางเรียนมหาวิทยาลัยได้สะดวกขึ้น"
+  title: "ระบบจัดตารางเรียน PSU",
+  description: "วางแผน จัดเวลา และส่งออกตารางเรียนมหาวิทยาลัยได้สะดวกยิ่งขึ้น"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -162,7 +162,7 @@ export default function Home() {
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-primary">
                 <CalendarDays className="h-4 w-4" />
-                PSU Timetable Planner
+                ระบบจัดตารางเรียน PSU
               </div>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-950">ตารางเรียนของคุณ</h1>
             </div>
