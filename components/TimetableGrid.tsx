@@ -93,7 +93,7 @@ function ExportHeader({
     <div className="export-only mb-4 hidden border-b border-slate-200 pb-4" style={{ width }}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase text-primary">Prince of Songkla University</p>
+          <p className="text-xs font-semibold uppercase text-primary">มหาวิทยาลัยสงขลานครินทร์</p>
           <h2 className="mt-1 text-2xl font-semibold text-slate-950">ตารางเรียน</h2>
         </div>
         <div className="grid gap-1 text-right text-sm text-slate-600">

@@ -14,7 +14,7 @@ export interface SubjectTheme {
 const themes: Record<SubjectCategory, SubjectTheme> = {
   "computer-science": {
     category: "computer-science",
-    label: "Computer Science",
+    label: "วิทยาการคอมพิวเตอร์",
     background: "#d9f2ff",
     border: "#6fd3ff",
     accent: "#0b6fae",
@@ -22,7 +22,7 @@ const themes: Record<SubjectCategory, SubjectTheme> = {
   },
   general: {
     category: "general",
-    label: "General Education",
+    label: "หมวดวิชาศึกษาทั่วไป",
     background: "#e8f7e8",
     border: "#8fd88f",
     accent: "#2f8f4e",
@@ -30,7 +30,7 @@ const themes: Record<SubjectCategory, SubjectTheme> = {
   },
   sports: {
     category: "sports",
-    label: "Sports",
+    label: "พลศึกษา",
     background: "#efe3ff",
     border: "#b79cff",
     accent: "#6d4bc4",
@@ -38,7 +38,7 @@ const themes: Record<SubjectCategory, SubjectTheme> = {
   },
   online: {
     category: "online",
-    label: "Online",
+    label: "ออนไลน์",
     background: "#dff1ff",
     border: "#84c5ff",
     accent: "#16639c",
@@ -46,7 +46,7 @@ const themes: Record<SubjectCategory, SubjectTheme> = {
   },
   laboratory: {
     category: "laboratory",
-    label: "Laboratory",
+    label: "ปฏิบัติการ",
     background: "#e7fff3",
     border: "#89d7b2",
     accent: "#19845a",
