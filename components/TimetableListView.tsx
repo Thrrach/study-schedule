@@ -46,7 +46,7 @@ export function TimetableListView({ classes, onView }: TimetableListViewProps) {
                         <Clock3 className="mt-0.5 h-4 w-4 text-slate-400" />
                         <div>
                           <div>{item.startTime} - {item.endTime}</div>
-                          <div className="mt-1 text-xs font-medium text-slate-500">Sec {item.section || "-"}</div>
+                          <div className="mt-1 text-xs font-medium text-slate-500">กลุ่ม {item.section || "-"}</div>
                         </div>
                       </div>
                       <div className="min-w-0">

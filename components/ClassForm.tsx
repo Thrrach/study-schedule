@@ -117,9 +117,9 @@ export function ClassForm({
           <Input autoFocus value={value.courseCode} onChange={(event) => update("courseCode", event.target.value)} placeholder="เช่น 344-211" />
         </Field>
         <Field label="ชื่อวิชา" error={submitted && errors.courseName ? "จำเป็น" : undefined}>
-          <Input value={value.courseName} onChange={(event) => update("courseName", event.target.value)} placeholder="เช่น Database Systems" />
+          <Input value={value.courseName} onChange={(event) => update("courseName", event.target.value)} placeholder="เช่น ระบบฐานข้อมูล" />
         </Field>
-        <Field label="กลุ่ม (Sec)" error={submitted && errors.section ? "จำเป็น" : undefined}>
+        <Field label="กลุ่มเรียน" error={submitted && errors.section ? "จำเป็น" : undefined}>
           <Input value={value.section} onChange={(event) => update("section", event.target.value)} placeholder="01" />
         </Field>
         <Field label="วันที่เรียน" error={submitted && errors.days ? "เลือกอย่างน้อย 1 วัน" : undefined}>
