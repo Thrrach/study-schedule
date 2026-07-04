@@ -42,7 +42,7 @@ export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailD
                     {item.courseCode}
                   </div>
                   <div className="rounded-full bg-white/75 px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5">
-                    Sec {item.section || "-"}
+                    กลุ่ม {item.section || "-"}
                   </div>
                 </div>
                 <h2 className="mt-3 text-xl font-semibold leading-snug">{item.courseName}</h2>

@@ -74,7 +74,7 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
           </p>
         </div>
         <span className="shrink-0 rounded border bg-white/75 px-1.5 py-0.5 text-[11px] font-semibold leading-none">
-          Sec {item.section || "-"}
+          กลุ่ม {item.section || "-"}
         </span>
       </div>
 
