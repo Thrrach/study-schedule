@@ -28,6 +28,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/toast";
 import { defaultSettings } from "@/data/sample-data";
 import { useTimetableStore } from "@/lib/timetable-store";
 import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
@@ -48,6 +49,7 @@ const DISPLAY_END = "16:00";
 
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
   const {
     classes,
     settings,
@@ -123,6 +125,52 @@ export default function Home() {
     setFormOpen(true);
   }
 
+  function formatClassLabel(item: Pick<ClassItem, "courseCode" | "courseName">) {
+    return `${item.courseCode} ${item.courseName}`.trim();
+  }
+
+  function handleSaveSuccess(action: "create" | "update", payload: ClassPayload) {
+    toast({
+      variant: "success",
+      title: action === "create" ? "เพิ่มรายวิชาแล้ว" : "บันทึกการแก้ไขแล้ว",
+      description: formatClassLabel(payload)
+    });
+  }
+
+  function handleDuplicateClass(id: string) {
+    const source = safeClasses.find((item) => item.id === id);
+    duplicateClass(id);
+    if (!source) return;
+    toast({
+      variant: "success",
+      title: "สร้างสำเนารายวิชาแล้ว",
+      description: formatClassLabel(source)
+    });
+  }
+
+  function handleDeleteClass() {
+    if (!classToDelete) return;
+    const removed = classToDelete;
+    deleteClass(removed.id);
+    setClassToDelete(null);
+    toast({
+      variant: "success",
+      title: "ลบรายวิชาแล้ว",
+      description: formatClassLabel(removed)
+    });
+  }
+
+  function handleMoveClass(id: string, day: ClassItem["days"][number], startTime: string, sourceDay?: ClassItem["days"][number]) {
+    const source = safeClasses.find((item) => item.id === id);
+    moveClass(id, day, startTime, sourceDay);
+    if (!source) return;
+    toast({
+      variant: "info",
+      title: "ย้ายรายวิชาแล้ว",
+      description: `${formatClassLabel(source)} • ${day} ${startTime}`
+    });
+  }
+
   function exportJson() {
     const backup: TimetableBackup = {
       version: 1,
@@ -147,8 +195,18 @@ export default function Home() {
       const backup = normalizeImport(parsed);
       replaceAll(backup);
       setImportError("");
+      toast({
+        variant: "success",
+        title: "นำเข้าข้อมูลแล้ว",
+        description: `${backup.classes.length} รายวิชา`
+      });
     } catch {
       setImportError("นำเข้าไฟล์ไม่ได้ กรุณาใช้ไฟล์สำรอง JSON ที่ส่งออกจากหน้านี้");
+      toast({
+        variant: "error",
+        title: "นำเข้าข้อมูลไม่สำเร็จ",
+        description: "กรุณาใช้ไฟล์ JSON ที่ส่งออกจากหน้านี้"
+      });
     } finally {
       event.target.value = "";
     }
@@ -243,11 +301,11 @@ export default function Home() {
                 studentName: settings.studentName ?? "",
                 exportedAt: exportDate
               }}
-              onDropClass={moveClass}
+              onDropClass={handleMoveClass}
               onAddClassAt={openNewFormAt}
               onView={setSelectedClass}
               onEdit={openEditForm}
-              onDuplicate={duplicateClass}
+              onDuplicate={handleDuplicateClass}
               onDelete={(id) => setClassToDelete(safeClasses.find((item) => item.id === id) ?? null)}
             />
           </div>
@@ -273,8 +331,13 @@ export default function Home() {
             onPreview={setDraft}
             onCancel={() => setFormOpen(false)}
             onSubmit={(payload) => {
-              if (editingClass) updateClass(editingClass.id, payload);
-              else addClass(payload);
+              if (editingClass) {
+                updateClass(editingClass.id, payload);
+                handleSaveSuccess("update", payload);
+              } else {
+                addClass(payload);
+                handleSaveSuccess("create", payload);
+              }
               setFormOpen(false);
               setEditingClass(null);
               setDraft(null);
@@ -368,8 +431,7 @@ export default function Home() {
             <Button
               variant="destructive"
               onClick={() => {
-                if (classToDelete) deleteClass(classToDelete.id);
-                setClassToDelete(null);
+                  handleDeleteClass();
               }}
             >
               ลบรายวิชา
@@ -391,6 +453,11 @@ export default function Home() {
               onClick={() => {
                 resetSample();
                 setResetConfirmOpen(false);
+                toast({
+                  variant: "success",
+                  title: "คืนค่าข้อมูลตัวอย่างแล้ว",
+                  description: "ตารางและการตั้งค่ากลับสู่ค่าเริ่มต้น"
+                });
               }}
             >
               คืนค่าข้อมูลตัวอย่าง
