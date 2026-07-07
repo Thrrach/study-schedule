@@ -71,7 +71,7 @@ export function ExportButton({ targetId, format, onBeforeExport }: ExportButtonP
   return (
     <div className="space-y-2">
       <p className="text-xs leading-relaxed text-amber-700">
-        ก่อนดาวน์โหลด โปรดตรวจสอบข้อมูลอีกครั้ง เนื้อหาที่ส่งออกมาจากข้อมูลที่คุณกรอก และอาจต้องเป็นไปตามข้อกำหนดของมหาวิทยาลัย
+        ก่อนดาวน์โหลด โปรดตรวจสอบข้อมูลให้เรียบร้อย เนื้อหาที่ส่งออกจะอ้างอิงจากข้อมูลที่คุณกรอก และควรใช้ให้สอดคล้องกับระเบียบของมหาวิทยาลัย
       </p>
       <Button
         onClick={exportImage}
