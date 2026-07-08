@@ -13,10 +13,12 @@ import {
   List,
   Plus,
   RotateCcw,
+  Search,
   Settings,
   SlidersHorizontal,
   Trash2,
-  TriangleAlert
+  TriangleAlert,
+  X
 } from "lucide-react";
 import { ClassForm } from "@/components/ClassForm";
 import { ExportButton } from "@/components/ExportButton";
@@ -35,6 +37,7 @@ import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normal
 import { cn } from "@/lib/utils";
 import { safeDays, subjectsShareDay } from "@/lib/subject-utils";
 import type { ClassItem, ImageFormat, TimetableBackup, TimetableSettings } from "@/types/timetable";
+import { weekDays } from "@/types/timetable";
 import dayjs from "dayjs";
 import buddhistEra from "dayjs/plugin/buddhistEra";
 import "dayjs/locale/th";
@@ -43,6 +46,8 @@ dayjs.extend(buddhistEra);
 
 type ClassPayload = Omit<ClassItem, "id" | "createdAt" | "updatedAt">;
 type ViewMode = "grid" | "list";
+type SortBy = "name" | "code" | "time" | "day";
+type WeekDay = ClassItem["days"][number];
 
 const DISPLAY_START = "08:00";
 const DISPLAY_END = "16:00";
@@ -75,6 +80,10 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [importError, setImportError] = useState("");
   const [exportDate, setExportDate] = useState(() => formatExportDate(dayjs()));
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("day");
+  const [selectedDays, setSelectedDays] = useState<WeekDay[]>([]);
+  const [selectedInstructors, setSelectedInstructors] = useState<string[]>([]);
   const displayedSettings = useMemo(
     () => ({ ...settings, startTime: DISPLAY_START, endTime: DISPLAY_END, timeSlots: defaultSettings.timeSlots }),
     [settings]
@@ -82,6 +91,67 @@ export default function Home() {
   const timeOptions = useMemo(() => generateTimeSlots(displayedSettings), [displayedSettings]);
   const safeClasses = useMemo(() => (Array.isArray(classes) ? classes : []), [classes]);
   const semesterOptions = useMemo(() => buildSemesterOptions(settings.semester), [settings.semester]);
+  
+  // Get unique instructors and days for filter options
+  const availableInstructors = useMemo(
+    () => Array.from(new Set(safeClasses.map((c) => c.instructor).filter(Boolean))).sort(),
+    [safeClasses]
+  );
+  const availableDays = useMemo(() => {
+    const daySet = new Set<WeekDay>();
+    safeClasses.forEach((c) => safeDays(c.days).forEach((d) => daySet.add(d)));
+    return Array.from(daySet);
+  }, [safeClasses]);
+  
+  // Filter and sort logic
+  const filteredAndSortedClasses = useMemo(() => {
+    let result = [...safeClasses];
+    
+    // Search filter
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.courseCode.toLowerCase().includes(term) ||
+          item.courseName.toLowerCase().includes(term) ||
+          item.instructor.toLowerCase().includes(term) ||
+          item.room.toLowerCase().includes(term)
+      );
+    }
+    
+    // Day filter
+    if (selectedDays.length > 0) {
+      result = result.filter((item) =>
+        safeDays(item.days).some((d) => selectedDays.includes(d))
+      );
+    }
+    
+    // Instructor filter
+    if (selectedInstructors.length > 0) {
+      result = result.filter((item) => selectedInstructors.includes(item.instructor));
+    }
+    
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.courseName.localeCompare(b.courseName, "th");
+        case "code":
+          return a.courseCode.localeCompare(b.courseCode, "th");
+        case "time":
+          return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+        case "day":
+          const aDayIndex = safeDays(a.days)[0] ? weekDayIndex(safeDays(a.days)[0]) : 0;
+          const bDayIndex = safeDays(b.days)[0] ? weekDayIndex(safeDays(b.days)[0]) : 0;
+          if (aDayIndex !== bDayIndex) return aDayIndex - bDayIndex;
+          return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+        default:
+          return 0;
+      }
+    });
+    
+    return result;
+  }, [safeClasses, searchTerm, sortBy, selectedDays, selectedInstructors]);
   const overlaps = draft ? findOverlaps(draft, editingClass?.id) : [];
   const totalOverlaps = useMemo(
     () =>
@@ -279,23 +349,69 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 no-print">
-          <Metric label="รายวิชา" value={safeClasses.length.toString()} />
-          <Metric label="ตารางชนกัน" value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
-          <Metric label="ช่วงเวลาที่แสดง" value={`${DISPLAY_START}-${DISPLAY_END}`} />
-          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">บันทึกอัตโนมัติแล้ว</p>
-              <p className="text-xs text-slate-500">ข้อมูลจะเก็บไว้ในเครื่องนี้โดยอัตโนมัติ</p>
+        {/* Search, Sort, and Filter Controls */}
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm no-print">
+          <div className="space-y-3">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                type="text"
+                placeholder="ค้นหารหัสวิชา ชื่อวิชา อาจารย์ ห้อง..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  aria-label="ล้างการค้นหา"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
-          </div>
-        </section>
+
+            {/* Sort and Filter Row */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {/* Sort */}
+              <div className="flex items-center gap-2">
+                <Label className="shrink-0 text-sm font-medium">เรียงลำดับ:</Label>
+                <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
+                  <SelectTrigger className="w-full sm:w-[180px]" aria-label="เรียงลำดับ">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">วันและเวลา</SelectItem>
+                    <SelectItem value="name">ชื่อวิชา (ก-ฮ)</SelectItem>
+                    <SelectItem value="code">รหัสวิชา (ก-ฮ)</SelectItem>
+                    <SelectItem value="time">เวลา (เร็ว-ช้า)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Clear Filters */}
+              {(searchTerm || selectedDays.length > 0 || selectedInstructors.length > 0) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setSelectedDays([]);
+                    setSelectedInstructors([]);
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  ล้างตัวกรอง
+                </Button>
+              )}\n            </div>\n\n            {/* Day Filter Pills */}\n            {availableDays.length > 0 && (\n              <div className=\"space-y-2\">\n                <p className=\"text-xs font-semibold text-slate-600\">กรองตามวัน:</p>\n                <div className=\"flex flex-wrap gap-2\">\n                  {availableDays.map((day) => {\n                    const dayName = weekDays.find((d) => d.key === day)?.label || day;\n                    const dayCount = safeClasses.filter((c) => safeDays(c.days).includes(day)).length;\n                    const isSelected = selectedDays.includes(day);\n                    return (\n                      <button\n                        key={day}\n                        onClick={() =>\n                          setSelectedDays((prev) =>\n                            isSelected ? prev.filter((d) => d !== day) : [...prev, day]\n                          )\n                        }\n                        className={cn(\n                          \"inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition\",\n                          isSelected\n                            ? \"bg-primary text-white\"\n                            : \"border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary\"\n                        )}\n                      >\n                        {dayName} <span className=\"text-xs opacity-75\">({dayCount})</span>\n                      </button>\n                    );\n                  })}\n                </div>\n              </div>\n            )}\n\n            {/* Instructor Filter Pills */}\n            {availableInstructors.length > 0 && (\n              <div className=\"space-y-2\">\n                <p className=\"text-xs font-semibold text-slate-600\">กรองตามอาจารย์:</p>\n                <div className=\"flex flex-wrap gap-2\">\n                  {availableInstructors.slice(0, 10).map((instructor) => {\n                    const instructorCount = safeClasses.filter((c) => c.instructor === instructor).length;\n                    const isSelected = selectedInstructors.includes(instructor);\n                    return (\n                      <button\n                        key={instructor}\n                        onClick={() =>\n                          setSelectedInstructors((prev) =>\n                            isSelected\n                              ? prev.filter((i) => i !== instructor)\n                              : [...prev, instructor]\n                          )\n                        }\n                        className={cn(\n                          \"inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition\",\n                          isSelected\n                            ? \"bg-primary text-white\"\n                            : \"border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary\"\n                        )}\n                      >\n                        {instructor} <span className=\"text-xs opacity-75\">({instructorCount})</span>\n                      </button>\n                    );\n                  })}\n                  {availableInstructors.length > 10 && (\n                    <span className=\"text-xs text-slate-500\">+{availableInstructors.length - 10} เพิ่มเติม</span>\n                  )}\n                </div>\n              </div>\n            )}\n          </div>\n        </section>\n\n        <section className=\"grid grid-cols-2 gap-2 sm:grid-cols-4 no-print\">\n          <Metric label=\"รายวิชาทั้งหมด\" value={safeClasses.length.toString()} />\n          <Metric label=\"แสดงผล\" value={filteredAndSortedClasses.length.toString()} tone={filteredAndSortedClasses.length === 0 ? \"warning\" : \"default\"} />\n          <Metric label=\"ตารางชนกัน\" value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? \"warning\" : \"success\"} />\n          <div className=\"flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm\">\n            <CheckCircle2 className=\"h-5 w-5 shrink-0 text-emerald-600\" />\n            <div className=\"min-w-0\">\n              <p className=\"text-sm font-semibold\">บันทึกอัตโนมัติแล้ว</p>\n              <p className=\"text-xs text-slate-500\">ข้อมูลจะเก็บไว้ในเครื่องนี้โดยอัตโนมัติ</p>\n            </div>\n          </div>\n        </section>
 
         <div className="relative">
           <div className={cn(viewMode === "grid" ? "absolute left-[-10000px] top-0 md:static" : "absolute left-[-10000px] top-0 w-max")}>
             <TimetableGrid
-              classes={safeClasses}
+              classes={filteredAndSortedClasses}
               exportMeta={{
                 semester: settings.semester ?? "",
                 studentName: settings.studentName ?? "",
@@ -311,7 +427,7 @@ export default function Home() {
           </div>
 
           <div className={cn("block", viewMode === "grid" ? "md:hidden" : "md:block")}>
-            <TimetableListView classes={safeClasses} onView={setSelectedClass} />
+            <TimetableListView classes={filteredAndSortedClasses} onView={setSelectedClass} />
           </div>
         </div>
       </div>
@@ -718,4 +834,15 @@ function normalizeImport(value: RawTimetableImport): TimetableBackup {
 
 function formatExportDate(date: dayjs.Dayjs) {
   return date.locale("th").format("D MMMM BBBB HH:mm");
+}
+
+function weekDayIndex(day: string): number {
+  const dayMap: Record<string, number> = {
+    Monday: 0,
+    Tuesday: 1,
+    Wednesday: 2,
+    Thursday: 3,
+    Friday: 4
+  };
+  return dayMap[day] ?? 0;
 }
