@@ -3,37 +3,22 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-600">กรองตามวัน:</p>
-                <div className="flex flex-wrap gap-2">
-                  {availableDays.map((day) => {
-                    const dayName = weekDays.find((item) => item.key === day)?.label || day;
-                    const dayCount = safeClasses.filter((item) => safeDays(item.days).includes(day)).length;
-                    const isSelected = selectedDays.includes(day);
-
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() =>
-                          setSelectedDays((current) =>
-                            isSelected ? current.filter((selectedDay) => selectedDay !== day) : [...current, day]
-                          )
-                        }
-                        className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
-                          isSelected
-                            ? "bg-primary text-white"
-                            : "border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary"
-                        )}
-                      >
-                        {dayName} <span className="text-xs opacity-75">({dayCount})</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
+  ArrowUp,
+  CalendarDays,
+  CheckCircle2,
+  FileDown,
+  FileUp,
+  Grid3X3,
+  HardDrive,
+  List,
+  Plus,
+  RotateCcw,
+  Search,
+  Settings,
+  SlidersHorizontal,
+  Trash2,
+  TriangleAlert,
+  X
 
 import { useTimetableStore } from "@/lib/timetable-store";
 import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
@@ -373,7 +358,7 @@ export default function Home() {
                 >
                   <X className="h-4 w-4" />
                 </button>
-              )}
+              )}{/*
             </div>
 
             {/* Sort and Filter Row */}
@@ -410,6 +395,8 @@ export default function Home() {
                   ล้างตัวกรอง
                 </Button>
               )}\n            </div>\n\n            {/* Day Filter Pills */}\n            {availableDays.length > 0 && (\n              <div className=\"space-y-2\">\n                <p className=\"text-xs font-semibold text-slate-600\">กรองตามวัน:</p>\n                <div className=\"flex flex-wrap gap-2\">\n                  {availableDays.map((day) => {\n                    const dayName = weekDays.find((d) => d.key === day)?.label || day;\n                    const dayCount = safeClasses.filter((c) => safeDays(c.days).includes(day)).length;\n                    const isSelected = selectedDays.includes(day);\n                    return (\n                      <button\n                        key={day}\n                        onClick={() =>\n                          setSelectedDays((prev) =>\n                            isSelected ? prev.filter((d) => d !== day) : [...prev, day]\n                          )\n                        }\n                        className={cn(\n                          \"inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition\",\n                          isSelected\n                            ? \"bg-primary text-white\"\n                            : \"border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary\"\n                        )}\n                      >\n                        {dayName} <span className=\"text-xs opacity-75\">({dayCount})</span>\n                      </button>\n                    );\n                  })}\n                </div>\n              </div>\n            )}\n\n            {/* Instructor Filter Pills */}\n            {availableInstructors.length > 0 && (\n              <div className=\"space-y-2\">\n                <p className=\"text-xs font-semibold text-slate-600\">กรองตามอาจารย์:</p>\n                <div className=\"flex flex-wrap gap-2\">\n                  {availableInstructors.slice(0, 10).map((instructor) => {\n                    const instructorCount = safeClasses.filter((c) => c.instructor === instructor).length;\n                    const isSelected = selectedInstructors.includes(instructor);\n                    return (\n                      <button\n                        key={instructor}\n                        onClick={() =>\n                          setSelectedInstructors((prev) =>\n                            isSelected\n                              ? prev.filter((i) => i !== instructor)\n                              : [...prev, instructor]\n                          )\n                        }\n                        className={cn(\n                          \"inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition\",\n                          isSelected\n                            ? \"bg-primary text-white\"\n                            : \"border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary\"\n                        )}\n                      >\n                        {instructor} <span className=\"text-xs opacity-75\">({instructorCount})</span>\n                      </button>\n                    );\n                  })}\n                  {availableInstructors.length > 10 && (\n                    <span className=\"text-xs text-slate-500\">+{availableInstructors.length - 10} เพิ่มเติม</span>\n                  )}\n                </div>\n              </div>\n            )}\n          </div>\n        </section>\n\n        <section className=\"grid grid-cols-2 gap-2 sm:grid-cols-4 no-print\">\n          <Metric label=\"รายวิชาทั้งหมด\" value={safeClasses.length.toString()} />\n          <Metric label=\"แสดงผล\" value={filteredAndSortedClasses.length.toString()} tone={filteredAndSortedClasses.length === 0 ? \"warning\" : \"default\"} />\n          <Metric label=\"ตารางชนกัน\" value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? \"warning\" : \"success\"} />\n          <div className=\"flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm\">\n            <CheckCircle2 className=\"h-5 w-5 shrink-0 text-emerald-600\" />\n            <div className=\"min-w-0\">\n              <p className=\"text-sm font-semibold\">บันทึกอัตโนมัติแล้ว</p>\n              <p className=\"text-xs text-slate-500\">ข้อมูลจะเก็บไว้ในเครื่องนี้โดยอัตโนมัติ</p>\n            </div>\n          </div>\n        </section>
+
+          */}
 
         <div className="relative">
           <div className={cn(viewMode === "grid" ? "absolute left-[-10000px] top-0 md:static" : "absolute left-[-10000px] top-0 w-max")}>
