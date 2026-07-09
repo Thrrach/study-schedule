@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -35,7 +35,7 @@ import { defaultSettings } from "@/data/sample-data";
 import { useTimetableStore } from "@/lib/timetable-store";
 import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
 import { cn } from "@/lib/utils";
-import { safeDays, subjectsShareDay } from "@/lib/subject-utils";
+import { normalizeClasses, safeDays, subjectsShareDay } from "@/lib/subject-utils";
 import type { ClassItem, ImageFormat, TimetableBackup, TimetableSettings } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
 import dayjs from "dayjs";
@@ -595,9 +595,16 @@ function SettingsForm({
   semesterOptions: string[];
 }) {
   const baseTimeOptions = useMemo(() => buildTimeOptions(10), []);
-  const slots = generateTimeSlots(settings);
+  const slots = useMemo(
+    () => generateTimeSlots(settings),
+    [settings.startTime, settings.endTime, settings.intervalMinutes, settings.timeSlots]
+  );
   const invalidRange = timeToMinutes(settings.endTime) <= timeToMinutes(settings.startTime);
   const [newSlot, setNewSlot] = useState(slots[0] ?? "08:00");
+
+  useEffect(() => {
+    setNewSlot(slots[0] ?? "08:00");
+  }, [slots]);
 
   function setSlots(timeSlots: string[]) {
     const normalized = normalizeTimeSlots(timeSlots);
@@ -824,11 +831,19 @@ function normalizeImport(value: RawTimetableImport): TimetableBackup {
     throw new Error("Invalid backup");
   }
 
+  const rawSettings = value.settings && typeof value.settings === "object" ? value.settings : defaultSettings;
+
   return {
     version: 1,
-    exportedAt: value.exportedAt ?? new Date().toISOString(),
-    settings: value.settings ?? defaultSettings,
-    classes: rawClasses as TimetableBackup["classes"]
+    exportedAt: typeof value.exportedAt === "string" ? value.exportedAt : new Date().toISOString(),
+    settings: {
+      ...defaultSettings,
+      ...(rawSettings as Partial<TimetableSettings>),
+      timeSlots: Array.isArray((rawSettings as Partial<TimetableSettings>).timeSlots)
+        ? (rawSettings as Partial<TimetableSettings>).timeSlots ?? defaultSettings.timeSlots
+        : defaultSettings.timeSlots
+    },
+    classes: normalizeClasses(rawClasses)
   };
 }
 

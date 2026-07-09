@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -20,14 +21,19 @@ const presetColors = [
 interface ColorPickerProps {
   value: string;
   onChange: (value: string) => void;
-
 }
 
 export function ColorPicker({ value, onChange }: ColorPickerProps) {
+  const labelId = useId();
+  const inputId = useId();
+  const safeValue = isValidHexColor(value) ? value : presetColors[0];
+
   return (
     <div className="space-y-2">
-      <Label>สีประจำวิชา</Label>
-      <div className="flex flex-wrap items-center gap-2">
+      <Label id={labelId} htmlFor={inputId}>
+        สีประจำวิชา
+      </Label>
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-labelledby={labelId}>
         {presetColors.map((color) => (
           <button
             key={color}
@@ -39,18 +45,25 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
             style={{ backgroundColor: color }}
             onClick={() => onChange(color)}
             aria-label={`ใช้สี ${color}`}
+            aria-pressed={value === color}
+            title={`ใช้สี ${color}`}
           >
             {value === color ? <Check className="h-4 w-4 text-white" /> : null}
           </button>
         ))}
         <Input
+          id={inputId}
           className="h-8 w-14 cursor-pointer p-1"
           type="color"
-          value={value}
+          value={safeValue}
           onChange={(event) => onChange(event.target.value)}
           aria-label="เลือกสีประจำวิชาเอง"
         />
       </div>
     </div>
   );
+}
+
+function isValidHexColor(value: string) {
+  return /^#[0-9a-fA-F]{6}$/.test(value);
 }
