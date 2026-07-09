@@ -247,6 +247,166 @@ export default function Home() {
           </div>
         </header>
 
+        <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur no-print">
+          <div className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
+            <div className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-[1.35fr_0.65fr]">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700">ค้นหารายวิชา</Label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="รหัสวิชา ชื่อวิชา อาจารย์ หรือห้อง"
+                      className="h-11 pl-10 pr-10"
+                    />
+                    {searchTerm ? (
+                      <button
+                        type="button"
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                        aria-label="ล้างการค้นหา"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700">เรียงลำดับ</Label>
+                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
+                    <SelectTrigger className="h-11 w-full" aria-label="เรียงลำดับ">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">วันและเวลา</SelectItem>
+                      <SelectItem value="time">เวลา</SelectItem>
+                      <SelectItem value="code">รหัสวิชา</SelectItem>
+                      <SelectItem value="name">ชื่อวิชา</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-700">กรองตามวัน</p>
+                  {selectedDays.length > 0 ? (
+                    <button type="button" className="text-xs font-medium text-slate-500 hover:text-slate-700" onClick={() => setSelectedDays([])}>
+                      ล้างวัน
+                    </button>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {availableDays.length > 0 ? (
+                    availableDays.map((day) => {
+                      const isSelected = selectedDays.includes(day);
+                      const dayLabel = weekDays.find((item) => item.key === day)?.shortLabel ?? day;
+
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() =>
+                            setSelectedDays((current) =>
+                              isSelected ? current.filter((selectedDay) => selectedDay !== day) : [...current, day]
+                            )
+                          }
+                          className={cn(
+                            "rounded-full border px-3 py-1.5 text-sm font-medium transition",
+                            isSelected
+                              ? "border-primary bg-primary text-white shadow-sm"
+                              : "border-slate-200 bg-slate-50 text-slate-700 hover:border-primary hover:bg-sky-50 hover:text-primary"
+                          )}
+                        >
+                          {dayLabel}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-slate-500">ยังไม่มีรายวิชาให้กรองตามวัน</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-slate-700">กรองตามอาจารย์</p>
+                  {selectedInstructors.length > 0 ? (
+                    <button type="button" className="text-xs font-medium text-slate-500 hover:text-slate-700" onClick={() => setSelectedInstructors([])}>
+                      ล้างอาจารย์
+                    </button>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {availableInstructors.length > 0 ? (
+                    availableInstructors.slice(0, 8).map((instructor) => {
+                      const isSelected = selectedInstructors.includes(instructor);
+                      return (
+                        <button
+                          key={instructor}
+                          type="button"
+                          onClick={() =>
+                            setSelectedInstructors((current) =>
+                              isSelected ? current.filter((selectedInstructor) => selectedInstructor !== instructor) : [...current, instructor]
+                            )
+                          }
+                          className={cn(
+                            "max-w-full rounded-full border px-3 py-1.5 text-left text-sm font-medium transition",
+                            isSelected
+                              ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-slate-900 hover:text-slate-900"
+                          )}
+                          title={instructor}
+                        >
+                          <span className="inline-block max-w-[15rem] truncate align-middle">{instructor}</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-slate-500">ยังไม่มีรายวิชาให้กรองตามอาจารย์</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-start gap-3 rounded-lg bg-white p-3 shadow-sm">
+                <div className="rounded-full bg-sky-100 p-2 text-sky-700">
+                  <Search className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{filteredClasses.length} รายวิชา</p>
+                  <p className="text-xs text-slate-500">แสดงผลตามตัวกรองและการเรียงลำดับ</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {searchTerm || selectedDays.length > 0 || selectedInstructors.length > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setSearchTerm("");
+                      setSelectedDays([]);
+                      setSelectedInstructors([]);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                    ล้างทั้งหมด
+                  </Button>
+                ) : null}
+                <Button type="button" variant="ghost" className="flex-1" onClick={() => setToolsOpen(true)}>
+                  <SlidersHorizontal className="h-4 w-4" />
+                  ตั้งค่า
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 no-print">
           <Metric label="รายวิชา" value={safeClasses.length.toString()} />
           <Metric label="ตารางชนกัน" value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
@@ -647,10 +807,36 @@ function subjectsOverlap(first: Pick<ClassItem, "days" | "startTime" | "endTime"
   return sharesDay && timeToMinutes(first.startTime) < timeToMinutes(second.endTime) && timeToMinutes(second.startTime) < timeToMinutes(first.endTime);
 }
 
-function sortClasses(classes: ClassItem[], sortBy: SortBy) {
-  const sorted = [...classes];
+function sortAndFilterClasses(
+  classes: ClassItem[],
+  filters: {
+    searchTerm: string;
+    sortBy: SortBy;
+    selectedDays: WeekDay[];
+    selectedInstructors: string[];
+  }
+) {
+  let result = [...classes];
+
+  if (filters.searchTerm.trim()) {
+    const query = filters.searchTerm.toLowerCase();
+    result = result.filter((item) => {
+      const haystack = [item.courseCode, item.courseName, item.section, item.instructor, item.room, item.note ?? ""].join(" ").toLowerCase();
+      return haystack.includes(query);
+    });
+  }
+
+  if (filters.selectedDays.length > 0) {
+    result = result.filter((item) => safeDays(item.days).some((day) => filters.selectedDays.includes(day)));
+  }
+
+  if (filters.selectedInstructors.length > 0) {
+    result = result.filter((item) => filters.selectedInstructors.includes(item.instructor));
+  }
+
+  const sorted = [...result];
   sorted.sort((a, b) => {
-    switch (sortBy) {
+    switch (filters.sortBy) {
       case "name":
         return a.courseName.localeCompare(b.courseName, "th");
       case "code":
