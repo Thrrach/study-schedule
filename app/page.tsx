@@ -13,19 +13,27 @@ import {
   List,
   Plus,
   RotateCcw,
-  Search,
-  Settings,
   SlidersHorizontal,
   Trash2,
-  TriangleAlert,
-  X
-
+  TriangleAlert
+} from "lucide-react";
+import { ClassForm } from "@/components/ClassForm";
+import { ExportButton } from "@/components/ExportButton";
+import { SubjectDetailDialog } from "@/components/SubjectDetailDialog";
+import { TimetableGrid } from "@/components/TimetableGrid";
+import { TimetableListView } from "@/components/TimetableListView";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/toast";
+import { defaultSettings } from "@/data/sample-data";
 import { useTimetableStore } from "@/lib/timetable-store";
 import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
+import { normalizeClasses, safeDays } from "@/lib/subject-utils";
 import { cn } from "@/lib/utils";
-import { normalizeClasses, safeDays, subjectsShareDay } from "@/lib/subject-utils";
 import type { ClassItem, ImageFormat, TimetableBackup, TimetableSettings } from "@/types/timetable";
-import { weekDays } from "@/types/timetable";
 import dayjs from "dayjs";
 import buddhistEra from "dayjs/plugin/buddhistEra";
 import "dayjs/locale/th";
@@ -34,8 +42,8 @@ dayjs.extend(buddhistEra);
 
 type ClassPayload = Omit<ClassItem, "id" | "createdAt" | "updatedAt">;
 type ViewMode = "grid" | "list";
-type SortBy = "name" | "code" | "time" | "day";
 type WeekDay = ClassItem["days"][number];
+type SortBy = "day" | "time" | "code" | "name";
 
 const DISPLAY_START = "08:00";
 const DISPLAY_END = "16:00";
@@ -56,6 +64,7 @@ export default function Home() {
     replaceAll,
     findOverlaps
   } = useTimetableStore();
+
   const [formOpen, setFormOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -68,94 +77,18 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [importError, setImportError] = useState("");
   const [exportDate, setExportDate] = useState(() => formatExportDate(dayjs()));
-  const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("day");
-  const [selectedDays, setSelectedDays] = useState<WeekDay[]>([]);
-  const [selectedInstructors, setSelectedInstructors] = useState<string[]>([]);
+
+  const safeClasses = useMemo(() => normalizeClasses(classes), [classes]);
   const displayedSettings = useMemo(
     () => ({ ...settings, startTime: DISPLAY_START, endTime: DISPLAY_END, timeSlots: defaultSettings.timeSlots }),
     [settings]
   );
   const timeOptions = useMemo(() => generateTimeSlots(displayedSettings), [displayedSettings]);
-  const safeClasses = useMemo(() => (Array.isArray(classes) ? classes : []), [classes]);
   const semesterOptions = useMemo(() => buildSemesterOptions(settings.semester), [settings.semester]);
-  
-  // Get unique instructors and days for filter options
-  const availableInstructors = useMemo(
-    () => Array.from(new Set(safeClasses.map((c) => c.instructor).filter(Boolean))).sort(),
-    [safeClasses]
-  );
-  const availableDays = useMemo(() => {
-    const daySet = new Set<WeekDay>();
-    safeClasses.forEach((c) => safeDays(c.days).forEach((d) => daySet.add(d)));
-    return Array.from(daySet);
-  }, [safeClasses]);
-  
-  // Filter and sort logic
-  const filteredAndSortedClasses = useMemo(() => {
-    let result = [...safeClasses];
-    
-    // Search filter
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.courseCode.toLowerCase().includes(term) ||
-          item.courseName.toLowerCase().includes(term) ||
-          item.instructor.toLowerCase().includes(term) ||
-          item.room.toLowerCase().includes(term)
-      );
-    }
-    
-    // Day filter
-    if (selectedDays.length > 0) {
-      result = result.filter((item) =>
-        safeDays(item.days).some((d) => selectedDays.includes(d))
-      );
-    }
-    
-    // Instructor filter
-    if (selectedInstructors.length > 0) {
-      result = result.filter((item) => selectedInstructors.includes(item.instructor));
-    }
-    
-    // Sort
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case "name":
-          return a.courseName.localeCompare(b.courseName, "th");
-        case "code":
-          return a.courseCode.localeCompare(b.courseCode, "th");
-        case "time":
-          return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
-        case "day":
-          const aDayIndex = safeDays(a.days)[0] ? weekDayIndex(safeDays(a.days)[0]) : 0;
-          const bDayIndex = safeDays(b.days)[0] ? weekDayIndex(safeDays(b.days)[0]) : 0;
-          if (aDayIndex !== bDayIndex) return aDayIndex - bDayIndex;
-          return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
-        default:
-          return 0;
-      }
-    });
-    
-    return result;
-  }, [safeClasses, searchTerm, sortBy, selectedDays, selectedInstructors]);
   const overlaps = draft ? findOverlaps(draft, editingClass?.id) : [];
-  const totalOverlaps = useMemo(
-    () =>
-      safeClasses.reduce((count, item, index) => {
-        const hasEarlierOverlap = safeClasses
-          .slice(0, index)
-          .some(
-            (other) =>
-              subjectsShareDay(other, item) &&
-              timeToMinutes(other.startTime) < timeToMinutes(item.endTime) &&
-              timeToMinutes(item.startTime) < timeToMinutes(other.endTime)
-          );
-        return count + (hasEarlierOverlap ? 1 : 0);
-      }, 0),
-    [safeClasses]
-  );
+  const totalOverlaps = useMemo(() => countOverlaps(safeClasses), [safeClasses]);
+  const filteredClasses = useMemo(() => sortClasses(safeClasses, sortBy), [safeClasses, sortBy]);
 
   function openNewForm(defaults: Partial<ClassPayload> = {}) {
     setEditingClass(null);
@@ -164,10 +97,9 @@ export default function Home() {
     setFormOpen(true);
   }
 
-  function openNewFormAt(day: ClassItem["days"][number], startTime: string) {
+  function openNewFormAt(day: WeekDay, startTime: string) {
     const start = timeToMinutes(startTime);
-    const latestEnd = timeToMinutes(DISPLAY_END);
-    const end = Math.min(start + 50, latestEnd);
+    const end = Math.min(start + 50, timeToMinutes(DISPLAY_END));
     openNewForm({
       days: [day],
       startTime,
@@ -199,11 +131,7 @@ export default function Home() {
     const source = safeClasses.find((item) => item.id === id);
     duplicateClass(id);
     if (!source) return;
-    toast({
-      variant: "success",
-      title: "สร้างสำเนารายวิชาแล้ว",
-      description: formatClassLabel(source)
-    });
+    toast({ variant: "success", title: "สร้างสำเนารายวิชาแล้ว", description: formatClassLabel(source) });
   }
 
   function handleDeleteClass() {
@@ -211,22 +139,14 @@ export default function Home() {
     const removed = classToDelete;
     deleteClass(removed.id);
     setClassToDelete(null);
-    toast({
-      variant: "success",
-      title: "ลบรายวิชาแล้ว",
-      description: formatClassLabel(removed)
-    });
+    toast({ variant: "success", title: "ลบรายวิชาแล้ว", description: formatClassLabel(removed) });
   }
 
-  function handleMoveClass(id: string, day: ClassItem["days"][number], startTime: string, sourceDay?: ClassItem["days"][number]) {
+  function handleMoveClass(id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) {
     const source = safeClasses.find((item) => item.id === id);
     moveClass(id, day, startTime, sourceDay);
     if (!source) return;
-    toast({
-      variant: "info",
-      title: "ย้ายรายวิชาแล้ว",
-      description: `${formatClassLabel(source)} • ${day} ${startTime}`
-    });
+    toast({ variant: "info", title: "ย้ายรายวิชาแล้ว", description: `${formatClassLabel(source)} • ${day} ${startTime}` });
   }
 
   function exportJson() {
@@ -248,23 +168,16 @@ export default function Home() {
   async function importJson(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+
     try {
       const parsed = JSON.parse(await file.text()) as RawTimetableImport;
       const backup = normalizeImport(parsed);
       replaceAll(backup);
       setImportError("");
-      toast({
-        variant: "success",
-        title: "นำเข้าข้อมูลแล้ว",
-        description: `${backup.classes.length} รายวิชา`
-      });
+      toast({ variant: "success", title: "นำเข้าข้อมูลแล้ว", description: `${backup.classes.length} รายวิชา` });
     } catch {
       setImportError("นำเข้าไฟล์ไม่ได้ กรุณาใช้ไฟล์สำรอง JSON ที่ส่งออกจากหน้านี้");
-      toast({
-        variant: "error",
-        title: "นำเข้าข้อมูลไม่สำเร็จ",
-        description: "กรุณาใช้ไฟล์ JSON ที่ส่งออกจากหน้านี้"
-      });
+      toast({ variant: "error", title: "นำเข้าข้อมูลไม่สำเร็จ", description: "กรุณาใช้ไฟล์ JSON ที่ส่งออกจากหน้านี้" });
     } finally {
       event.target.value = "";
     }
@@ -284,10 +197,7 @@ export default function Home() {
             </div>
 
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-              <Select
-                value={settings.semester || "none"}
-                onValueChange={(semester) => updateSettings({ ...settings, semester: semester === "none" ? "" : semester })}
-              >
+              <Select value={settings.semester || "none"} onValueChange={(semester) => updateSettings({ ...settings, semester: semester === "none" ? "" : semester })}>
                 <SelectTrigger className="w-full sm:w-[190px]" aria-label="ภาคเรียน">
                   <SelectValue placeholder="ภาคเรียน">{settings.semester || "ภาคเรียน"}</SelectValue>
                 </SelectTrigger>
@@ -302,33 +212,15 @@ export default function Home() {
               </Select>
 
               <div className="inline-flex w-full rounded-md border bg-slate-50 p-1 sm:w-auto" aria-label="มุมมองตารางเรียน">
-                <Button
-                  type="button"
-                  variant={viewMode === "grid" ? "secondary" : "ghost"}
-                  size="sm"
-                  className="h-8 flex-1 sm:flex-none"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid3X3 className="h-4 w-4" />
-                  ตาราง
+                <Button type="button" variant={viewMode === "grid" ? "secondary" : "ghost"} size="sm" className="h-8 flex-1 sm:flex-none" onClick={() => setViewMode("grid")}>
+                  <Grid3X3 className="h-4 w-4" /> ตาราง
                 </Button>
-                <Button
-                  type="button"
-                  variant={viewMode === "list" ? "secondary" : "ghost"}
-                  size="sm"
-                  className="h-8 flex-1 sm:flex-none"
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="h-4 w-4" />
-                  รายการ
+                <Button type="button" variant={viewMode === "list" ? "secondary" : "ghost"} size="sm" className="h-8 flex-1 sm:flex-none" onClick={() => setViewMode("list")}>
+                  <List className="h-4 w-4" /> รายการ
                 </Button>
               </div>
 
-              <ExportButton
-                targetId="timetable-export"
-                format={imageFormat}
-                onBeforeExport={() => setExportDate(formatExportDate(dayjs()))}
-              />
+              <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs()))} />
               <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setToolsOpen(true)}>
                 <SlidersHorizontal className="h-4 w-4" />
                 เครื่องมือ
@@ -337,76 +229,24 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Search, Sort, and Filter Controls */}
-        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm no-print">
-          <div className="space-y-3">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                type="text"
-                placeholder="ค้นหารหัสวิชา ชื่อวิชา อาจารย์ ห้อง..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-10"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  aria-label="ล้างการค้นหา"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}{/*
+        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 no-print">
+          <Metric label="รายวิชา" value={safeClasses.length.toString()} />
+          <Metric label="ตารางชนกัน" value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
+          <Metric label="ช่วงเวลาที่แสดง" value={`${DISPLAY_START}-${DISPLAY_END}`} />
+          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">บันทึกอัตโนมัติแล้ว</p>
+              <p className="text-xs text-slate-500">ข้อมูลจะเก็บไว้ในเครื่องนี้โดยอัตโนมัติ</p>
             </div>
-
-            {/* Sort and Filter Row */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* Sort */}
-              <div className="flex items-center gap-2">
-                <Label className="shrink-0 text-sm font-medium">เรียงลำดับ:</Label>
-                <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
-                  <SelectTrigger className="w-full sm:w-[180px]" aria-label="เรียงลำดับ">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="day">วันและเวลา</SelectItem>
-                    <SelectItem value="name">ชื่อวิชา (ก-ฮ)</SelectItem>
-                    <SelectItem value="code">รหัสวิชา (ก-ฮ)</SelectItem>
-                    <SelectItem value="time">เวลา (เร็ว-ช้า)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Clear Filters */}
-              {(searchTerm || selectedDays.length > 0 || selectedInstructors.length > 0) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTerm("");
-                    setSelectedDays([]);
-                    setSelectedInstructors([]);
-                  }}
-                  className="w-full sm:w-auto"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  ล้างตัวกรอง
-                </Button>
-              )}\n            </div>\n\n            {/* Day Filter Pills */}\n            {availableDays.length > 0 && (\n              <div className=\"space-y-2\">\n                <p className=\"text-xs font-semibold text-slate-600\">กรองตามวัน:</p>\n                <div className=\"flex flex-wrap gap-2\">\n                  {availableDays.map((day) => {\n                    const dayName = weekDays.find((d) => d.key === day)?.label || day;\n                    const dayCount = safeClasses.filter((c) => safeDays(c.days).includes(day)).length;\n                    const isSelected = selectedDays.includes(day);\n                    return (\n                      <button\n                        key={day}\n                        onClick={() =>\n                          setSelectedDays((prev) =>\n                            isSelected ? prev.filter((d) => d !== day) : [...prev, day]\n                          )\n                        }\n                        className={cn(\n                          \"inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition\",\n                          isSelected\n                            ? \"bg-primary text-white\"\n                            : \"border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary\"\n                        )}\n                      >\n                        {dayName} <span className=\"text-xs opacity-75\">({dayCount})</span>\n                      </button>\n                    );\n                  })}\n                </div>\n              </div>\n            )}\n\n            {/* Instructor Filter Pills */}\n            {availableInstructors.length > 0 && (\n              <div className=\"space-y-2\">\n                <p className=\"text-xs font-semibold text-slate-600\">กรองตามอาจารย์:</p>\n                <div className=\"flex flex-wrap gap-2\">\n                  {availableInstructors.slice(0, 10).map((instructor) => {\n                    const instructorCount = safeClasses.filter((c) => c.instructor === instructor).length;\n                    const isSelected = selectedInstructors.includes(instructor);\n                    return (\n                      <button\n                        key={instructor}\n                        onClick={() =>\n                          setSelectedInstructors((prev) =>\n                            isSelected\n                              ? prev.filter((i) => i !== instructor)\n                              : [...prev, instructor]\n                          )\n                        }\n                        className={cn(\n                          \"inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition\",\n                          isSelected\n                            ? \"bg-primary text-white\"\n                            : \"border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary\"\n                        )}\n                      >\n                        {instructor} <span className=\"text-xs opacity-75\">({instructorCount})</span>\n                      </button>\n                    );\n                  })}\n                  {availableInstructors.length > 10 && (\n                    <span className=\"text-xs text-slate-500\">+{availableInstructors.length - 10} เพิ่มเติม</span>\n                  )}\n                </div>\n              </div>\n            )}\n          </div>\n        </section>\n\n        <section className=\"grid grid-cols-2 gap-2 sm:grid-cols-4 no-print\">\n          <Metric label=\"รายวิชาทั้งหมด\" value={safeClasses.length.toString()} />\n          <Metric label=\"แสดงผล\" value={filteredAndSortedClasses.length.toString()} tone={filteredAndSortedClasses.length === 0 ? \"warning\" : \"default\"} />\n          <Metric label=\"ตารางชนกัน\" value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? \"warning\" : \"success\"} />\n          <div className=\"flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm\">\n            <CheckCircle2 className=\"h-5 w-5 shrink-0 text-emerald-600\" />\n            <div className=\"min-w-0\">\n              <p className=\"text-sm font-semibold\">บันทึกอัตโนมัติแล้ว</p>\n              <p className=\"text-xs text-slate-500\">ข้อมูลจะเก็บไว้ในเครื่องนี้โดยอัตโนมัติ</p>\n            </div>\n          </div>\n        </section>
-
-          */}
+          </div>
+        </section>
 
         <div className="relative">
           <div className={cn(viewMode === "grid" ? "absolute left-[-10000px] top-0 md:static" : "absolute left-[-10000px] top-0 w-max")}>
             <TimetableGrid
-              classes={filteredAndSortedClasses}
-              exportMeta={{
-                semester: settings.semester ?? "",
-                studentName: settings.studentName ?? "",
-                exportedAt: exportDate
-              }}
+              classes={filteredClasses}
+              exportMeta={{ semester: settings.semester ?? "", studentName: settings.studentName ?? "", exportedAt: exportDate }}
               onDropClass={handleMoveClass}
               onAddClassAt={openNewFormAt}
               onView={setSelectedClass}
@@ -417,7 +257,7 @@ export default function Home() {
           </div>
 
           <div className={cn("block", viewMode === "grid" ? "md:hidden" : "md:block")}>
-            <TimetableListView classes={filteredAndSortedClasses} onView={setSelectedClass} />
+            <TimetableListView classes={filteredClasses} onView={setSelectedClass} />
           </div>
         </div>
       </div>
@@ -460,14 +300,14 @@ export default function Home() {
           <div className="grid gap-5 md:grid-cols-2">
             <section className="rounded-lg border bg-slate-50/70 p-4">
               <div className="mb-4 flex items-center gap-2 font-semibold">
-                <Settings className="h-4 w-4" />
-                การตั้งค่าตารางและช่วงเวลา
+                <HardDrive className="h-4 w-4" />
+                การตั้งค่าตารางและข้อมูลส่วนตัว
               </div>
               <SettingsForm settings={settings} onChange={updateSettings} semesterOptions={semesterOptions} />
             </section>
             <section className="rounded-lg border bg-slate-50/70 p-4">
               <div className="mb-1 flex items-center gap-2 font-semibold">
-                <HardDrive className="h-4 w-4" />
+                <FileDown className="h-4 w-4" />
                 จัดการรายวิชาและส่งออก
               </div>
               <p className="mb-4 text-sm text-slate-500">เพิ่มรายวิชา ส่งออกรูปตาราง หรือสำรองข้อมูล JSON ไว้สำหรับย้ายไปใช้อีกเครื่อง</p>
@@ -485,11 +325,7 @@ export default function Home() {
                     <SelectItem value="jpeg">JPEG</SelectItem>
                   </SelectContent>
                 </Select>
-                <ExportButton
-                  targetId="timetable-export"
-                  format={imageFormat}
-                  onBeforeExport={() => setExportDate(formatExportDate(dayjs()))}
-                />
+                <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs()))} />
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" onClick={exportJson}>
                     <FileDown className="h-4 w-4" />
@@ -498,75 +334,45 @@ export default function Home() {
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                     <FileUp className="h-4 w-4" />
                     นำเข้าข้อมูล
+                  </Button>
                 </div>
-
-                {availableDays.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold text-slate-600">กรองตามวัน:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {availableDays.map((day) => {
-                        const dayName = weekDays.find((item) => item.key === day)?.label || day;
-                        const dayCount = safeClasses.filter((item) => safeDays(item.days).includes(day)).length;
-                        const isSelected = selectedDays.includes(day);
-
-                        return (
-                          <button
-                            key={day}
-                            type="button"
-                            onClick={() =>
-                              setSelectedDays((current) =>
-                                isSelected ? current.filter((selectedDay) => selectedDay !== day) : [...current, day]
-                              )
-                            }
-                            className={cn(
-                              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
-                              isSelected
-                                ? "bg-primary text-white"
-                                : "border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary"
-                            )}
-                          >
-                            {dayName} <span className="text-xs opacity-75">({dayCount})</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-
-                {availableInstructors.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold text-slate-600">กรองตามอาจารย์:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {availableInstructors.slice(0, 10).map((instructor) => {
-                        const isSelected = selectedInstructors.includes(instructor);
-                        const instructorCount = safeClasses.filter((item) => item.instructor === instructor).length;
-
-                        return (
-                          <button
-                            key={instructor}
-                            type="button"
-                            onClick={() =>
-                              setSelectedInstructors((current) =>
-                                isSelected ? current.filter((selectedInstructor) => selectedInstructor !== instructor) : [...current, instructor]
-                              )
-                            }
-                            className={cn(
-                              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
-                              isSelected
-                                ? "bg-slate-900 text-white"
-                                : "border border-slate-200 bg-white text-slate-700 hover:border-slate-900 hover:text-slate-900"
-                            )}
-                          >
-                            {instructor} <span className="text-xs opacity-75">({instructorCount})</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
+                <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={importJson} />
+                {importError ? <p className="text-sm text-destructive">{importError}</p> : null}
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setToolsOpen(false);
+                    setResetConfirmOpen(true);
+                  }}
+                  className="w-full justify-start"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  คืนค่าข้อมูลตัวอย่าง
+                </Button>
               </div>
             </section>
-            >
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <SubjectDetailDialog item={selectedClass} open={Boolean(selectedClass)} onOpenChange={(open) => !open && setSelectedClass(null)} />
+
+      <Dialog open={Boolean(classToDelete)} onOpenChange={(open) => !open && setClassToDelete(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>ต้องการลบรายวิชานี้ใช่ไหม?</DialogTitle>
+          </DialogHeader>
+          <div className="flex gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-900">
+            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" />
+            <p>
+              {classToDelete?.courseCode} {classToDelete?.courseName} จะถูกลบออกจากทุกวันที่เลือกไว้
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setClassToDelete(null)}>
+              ยกเลิก
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteClass}>
               ลบรายวิชา
             </Button>
           </div>
@@ -578,19 +384,19 @@ export default function Home() {
           <DialogHeader>
             <DialogTitle>ต้องการคืนค่าข้อมูลตัวอย่างใช่ไหม?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-slate-600">รายวิชาและการตั้งค่าปัจจุบันจะถูกแทนที่ด้วยข้อมูลตัวอย่าง แนะนำให้สำรองข้อมูล JSON ก่อน หากยังต้องการเก็บไว้</p>
+          <p className="text-sm text-slate-600">
+            รายวิชาและการตั้งค่าปัจจุบันจะถูกแทนที่ด้วยข้อมูลตัวอย่าง แนะนำให้สำรองข้อมูล JSON ก่อน หากยังต้องการเก็บไว้
+          </p>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setResetConfirmOpen(false)}>ยกเลิก</Button>
+            <Button variant="outline" onClick={() => setResetConfirmOpen(false)}>
+              ยกเลิก
+            </Button>
             <Button
               variant="destructive"
               onClick={() => {
                 resetSample();
                 setResetConfirmOpen(false);
-                toast({
-                  variant: "success",
-                  title: "คืนค่าข้อมูลตัวอย่างแล้ว",
-                  description: "ตารางและการตั้งค่ากลับสู่ค่าเริ่มต้น"
-                });
+                toast({ variant: "success", title: "คืนค่าข้อมูลตัวอย่างแล้ว", description: "ตารางและการตั้งค่ากลับสู่ค่าเริ่มต้น" });
               }}
             >
               คืนค่าข้อมูลตัวอย่าง
@@ -635,11 +441,7 @@ function SettingsForm({
   }
 
   function updateGeneratedRange(updates: Partial<Pick<TimetableSettings, "startTime" | "endTime" | "intervalMinutes">>) {
-    onChange({
-      ...settings,
-      ...updates,
-      timeSlots: []
-    });
+    onChange({ ...settings, ...updates, timeSlots: [] });
   }
 
   function updateSlot(index: number, value: string) {
@@ -661,13 +463,14 @@ function SettingsForm({
     <div className="space-y-4">
       <div className="grid gap-3">
         <Field label="ชื่อผู้เรียน">
-          <Input value={settings.studentName ?? ""} onChange={(event) => onChange({ ...settings, studentName: event.target.value })} placeholder="เช่น นายสมชาย ใจดี" />
+          <Input
+            value={settings.studentName ?? ""}
+            onChange={(event) => onChange({ ...settings, studentName: event.target.value })}
+            placeholder="เช่น นายสมชาย ใจดี"
+          />
         </Field>
         <Field label="ภาคเรียน">
-          <Select
-            value={settings.semester || "none"}
-            onValueChange={(semester) => onChange({ ...settings, semester: semester === "none" ? "" : semester })}
-          >
+          <Select value={settings.semester || "none"} onValueChange={(semester) => onChange({ ...settings, semester: semester === "none" ? "" : semester })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -680,11 +483,6 @@ function SettingsForm({
               ))}
             </SelectContent>
           </Select>
-          <Input
-            value={settings.semester ?? ""}
-            onChange={(event) => onChange({ ...settings, semester: event.target.value })}
-            placeholder="หรือพิมพ์เอง เช่น 1/2569"
-          />
         </Field>
       </div>
 
@@ -722,6 +520,7 @@ function SettingsForm({
           </Select>
         </Field>
       </div>
+
       <Field label="ระยะห่าง (นาที)">
         <Input
           type="number"
@@ -732,17 +531,18 @@ function SettingsForm({
           onChange={(event) => updateGeneratedRange({ intervalMinutes: Number(event.target.value) })}
         />
       </Field>
+
       <Button type="button" variant="outline" className="w-full" onClick={() => setSlots(generateTimeSlots({ ...settings, timeSlots: [] }))}>
         สร้างช่วงเวลาอีกครั้ง
       </Button>
+
       <details className="group rounded-lg border bg-white p-3">
         <summary className="cursor-pointer text-sm font-medium text-slate-700">กำหนดช่วงเวลาเอง</summary>
         <div className="mt-3 space-y-2">
           <div className="flex gap-2">
             <Input type="time" value={newSlot} onChange={(event) => setNewSlot(event.target.value)} />
             <Button type="button" variant="secondary" onClick={() => isValidTime(newSlot) && setSlots([...slots, newSlot])}>
-              <Plus className="h-4 w-4" />
-              เพิ่มช่วงเวลา
+              <Plus className="h-4 w-4" /> เพิ่มช่วงเวลา
             </Button>
           </div>
           <div className="max-h-72 space-y-2 overflow-auto pr-1">
@@ -755,15 +555,7 @@ function SettingsForm({
                 <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveSlot(index, 1)} disabled={index === slots.length - 1} aria-label="เลื่อนช่วงเวลาลง">
                   <ArrowDown className="h-4 w-4" />
                 </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 text-destructive"
-                  onClick={() => setSlots(slots.filter((_, slotIndex) => slotIndex !== index))}
-                  disabled={slots.length <= 1}
-                  aria-label="ลบช่วงเวลา"
-                >
+                <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setSlots(slots.filter((_, slotIndex) => slotIndex !== index))} disabled={slots.length <= 1} aria-label="ลบช่วงเวลา">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -771,6 +563,7 @@ function SettingsForm({
           </div>
         </div>
       </details>
+
       {invalidRange ? <p className="text-sm text-destructive">เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</p> : null}
     </div>
   );
@@ -799,7 +592,9 @@ function Field({
 function Metric({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "success" | "warning" }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-      <div className={`text-lg font-semibold ${tone === "warning" ? "text-amber-700" : tone === "success" ? "text-emerald-700" : "text-slate-900"}`}>{value}</div>
+      <div className={`text-lg font-semibold ${tone === "warning" ? "text-amber-700" : tone === "success" ? "text-emerald-700" : "text-slate-900"}`}>
+        {value}
+      </div>
       <div className="text-xs text-slate-500">{label}</div>
     </div>
   );
@@ -820,16 +615,46 @@ function toPayload(item: ClassItem): ClassPayload {
   };
 }
 
+function countOverlaps(classes: ClassItem[]) {
+  return classes.reduce((count, item, index) => {
+    const hasEarlierOverlap = classes.slice(0, index).some((other) => subjectsOverlap(other, item));
+    return count + (hasEarlierOverlap ? 1 : 0);
+  }, 0);
+}
+
+function subjectsOverlap(first: Pick<ClassItem, "days" | "startTime" | "endTime">, second: Pick<ClassItem, "days" | "startTime" | "endTime">) {
+  const firstDays = safeDays(first.days);
+  const secondDays = safeDays(second.days);
+  const sharesDay = firstDays.some((day) => secondDays.includes(day));
+  return sharesDay && timeToMinutes(first.startTime) < timeToMinutes(second.endTime) && timeToMinutes(second.startTime) < timeToMinutes(first.endTime);
+}
+
+function sortClasses(classes: ClassItem[], sortBy: SortBy) {
+  const sorted = [...classes];
+  sorted.sort((a, b) => {
+    switch (sortBy) {
+      case "name":
+        return a.courseName.localeCompare(b.courseName, "th");
+      case "code":
+        return a.courseCode.localeCompare(b.courseCode, "th");
+      case "time":
+        return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+      case "day": {
+        const aDayIndex = safeDays(a.days)[0] ? weekDayIndex(safeDays(a.days)[0]) : 0;
+        const bDayIndex = safeDays(b.days)[0] ? weekDayIndex(safeDays(b.days)[0]) : 0;
+        if (aDayIndex !== bDayIndex) return aDayIndex - bDayIndex;
+        return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+      }
+      default:
+        return 0;
+    }
+  });
+  return sorted;
+}
+
 function buildSemesterOptions(current?: string) {
   const buddhistYear = new Date().getFullYear() + 543;
-  const options = [
-    `1/${buddhistYear}`,
-    `2/${buddhistYear}`,
-    `ฤดูร้อน/${buddhistYear}`,
-    `1/${buddhistYear + 1}`,
-    `2/${buddhistYear + 1}`
-  ];
-
+  const options = [`1/${buddhistYear}`, `2/${buddhistYear}`, `ฤดูร้อน/${buddhistYear}`, `1/${buddhistYear + 1}`, `2/${buddhistYear + 1}`];
   return current && !options.includes(current) ? [current, ...options] : options;
 }
 
@@ -839,15 +664,9 @@ type RawTimetableImport = Partial<TimetableBackup> & {
 };
 
 function normalizeImport(value: RawTimetableImport): TimetableBackup {
-  if (!value || typeof value !== "object") {
-    throw new Error("Invalid backup");
-  }
-
+  if (!value || typeof value !== "object") throw new Error("Invalid backup");
   const rawClasses = Array.isArray(value.classes) ? value.classes : Array.isArray(value.subjects) ? value.subjects : null;
-  if (!rawClasses) {
-    throw new Error("Invalid backup");
-  }
-
+  if (!rawClasses) throw new Error("Invalid backup");
   const rawSettings = value.settings && typeof value.settings === "object" ? value.settings : defaultSettings;
 
   return {
@@ -857,7 +676,7 @@ function normalizeImport(value: RawTimetableImport): TimetableBackup {
       ...defaultSettings,
       ...(rawSettings as Partial<TimetableSettings>),
       timeSlots: Array.isArray((rawSettings as Partial<TimetableSettings>).timeSlots)
-        ? (rawSettings as Partial<TimetableSettings>).timeSlots ?? defaultSettings.timeSlots
+        ? normalizeTimeSlots((rawSettings as Partial<TimetableSettings>).timeSlots)
         : defaultSettings.timeSlots
     },
     classes: normalizeClasses(rawClasses)
