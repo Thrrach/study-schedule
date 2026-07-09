@@ -3,35 +3,38 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
-  ArrowUp,
-  CalendarDays,
-  CheckCircle2,
-  FileDown,
-  FileUp,
-  Grid3X3,
-  HardDrive,
-  List,
-  Plus,
-  RotateCcw,
-  Search,
-  Settings,
-  SlidersHorizontal,
-  Trash2,
-  TriangleAlert,
-  X
-} from "lucide-react";
-import { ClassForm } from "@/components/ClassForm";
-import { ExportButton } from "@/components/ExportButton";
-import { SubjectDetailDialog } from "@/components/SubjectDetailDialog";
-import { TimetableGrid } from "@/components/TimetableGrid";
-import { TimetableListView } from "@/components/TimetableListView";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/toast";
-import { defaultSettings } from "@/data/sample-data";
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-600">กรองตามวัน:</p>
+                <div className="flex flex-wrap gap-2">
+                  {availableDays.map((day) => {
+                    const dayName = weekDays.find((item) => item.key === day)?.label || day;
+                    const dayCount = safeClasses.filter((item) => safeDays(item.days).includes(day)).length;
+                    const isSelected = selectedDays.includes(day);
+
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() =>
+                          setSelectedDays((current) =>
+                            isSelected ? current.filter((selectedDay) => selectedDay !== day) : [...current, day]
+                          )
+                        }
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
+                          isSelected
+                            ? "bg-primary text-white"
+                            : "border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary"
+                        )}
+                      >
+                        {dayName} <span className="text-xs opacity-75">({dayCount})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
 import { useTimetableStore } from "@/lib/timetable-store";
 import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -508,47 +511,74 @@ export default function Home() {
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                     <FileUp className="h-4 w-4" />
                     นำเข้าข้อมูล
-                  </Button>
                 </div>
-                <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={importJson} />
-                {importError ? <p className="text-sm text-destructive">{importError}</p> : null}
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setToolsOpen(false);
-                    setResetConfirmOpen(true);
-                  }}
-                  className="w-full justify-start"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  คืนค่าข้อมูลตัวอย่าง
-                </Button>
+
+                {availableDays.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-slate-600">กรองตามวัน:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {availableDays.map((day) => {
+                        const dayName = weekDays.find((item) => item.key === day)?.label || day;
+                        const dayCount = safeClasses.filter((item) => safeDays(item.days).includes(day)).length;
+                        const isSelected = selectedDays.includes(day);
+
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() =>
+                              setSelectedDays((current) =>
+                                isSelected ? current.filter((selectedDay) => selectedDay !== day) : [...current, day]
+                              )
+                            }
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
+                              isSelected
+                                ? "bg-primary text-white"
+                                : "border border-slate-200 bg-white text-slate-700 hover:border-primary hover:text-primary"
+                            )}
+                          >
+                            {dayName} <span className="text-xs opacity-75">({dayCount})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+
+                {availableInstructors.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-slate-600">กรองตามอาจารย์:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {availableInstructors.slice(0, 10).map((instructor) => {
+                        const isSelected = selectedInstructors.includes(instructor);
+                        const instructorCount = safeClasses.filter((item) => item.instructor === instructor).length;
+
+                        return (
+                          <button
+                            key={instructor}
+                            type="button"
+                            onClick={() =>
+                              setSelectedInstructors((current) =>
+                                isSelected ? current.filter((selectedInstructor) => selectedInstructor !== instructor) : [...current, instructor]
+                              )
+                            }
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition",
+                              isSelected
+                                ? "bg-slate-900 text-white"
+                                : "border border-slate-200 bg-white text-slate-700 hover:border-slate-900 hover:text-slate-900"
+                            )}
+                          >
+                            {instructor} <span className="text-xs opacity-75">({instructorCount})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </section>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <SubjectDetailDialog item={selectedClass} open={Boolean(selectedClass)} onOpenChange={(open) => !open && setSelectedClass(null)} />
-
-      <Dialog open={Boolean(classToDelete)} onOpenChange={(open) => !open && setClassToDelete(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>ต้องการลบรายวิชานี้ใช่ไหม?</DialogTitle>
-          </DialogHeader>
-          <div className="flex gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-900">
-            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" />
-            <p>
-              {classToDelete?.courseCode} {classToDelete?.courseName} จะถูกลบออกจากทุกวันที่เลือกไว้
-            </p>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setClassToDelete(null)}>ยกเลิก</Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                  handleDeleteClass();
-              }}
             >
               ลบรายวิชา
             </Button>
