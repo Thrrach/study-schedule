@@ -12,10 +12,12 @@ import {
   HardDrive,
   List,
   Plus,
+  Search,
   RotateCcw,
   SlidersHorizontal,
   Trash2,
-  TriangleAlert
+  TriangleAlert,
+  X
 } from "lucide-react";
 import { ClassForm } from "@/components/ClassForm";
 import { ExportButton } from "@/components/ExportButton";
@@ -34,6 +36,7 @@ import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normal
 import { normalizeClasses, safeDays } from "@/lib/subject-utils";
 import { cn } from "@/lib/utils";
 import type { ClassItem, ImageFormat, TimetableBackup, TimetableSettings } from "@/types/timetable";
+import { weekDays } from "@/types/timetable";
 import dayjs from "dayjs";
 import buddhistEra from "dayjs/plugin/buddhistEra";
 import "dayjs/locale/th";
@@ -78,6 +81,9 @@ export default function Home() {
   const [importError, setImportError] = useState("");
   const [exportDate, setExportDate] = useState(() => formatExportDate(dayjs()));
   const [sortBy, setSortBy] = useState<SortBy>("day");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDays, setSelectedDays] = useState<WeekDay[]>([]);
+  const [selectedInstructors, setSelectedInstructors] = useState<string[]>([]);
 
   const safeClasses = useMemo(() => normalizeClasses(classes), [classes]);
   const displayedSettings = useMemo(
@@ -88,7 +94,19 @@ export default function Home() {
   const semesterOptions = useMemo(() => buildSemesterOptions(settings.semester), [settings.semester]);
   const overlaps = draft ? findOverlaps(draft, editingClass?.id) : [];
   const totalOverlaps = useMemo(() => countOverlaps(safeClasses), [safeClasses]);
-  const filteredClasses = useMemo(() => sortClasses(safeClasses, sortBy), [safeClasses, sortBy]);
+  const availableInstructors = useMemo(
+    () => Array.from(new Set(safeClasses.map((item) => item.instructor).filter(Boolean))).sort((a, b) => a.localeCompare(b, "th")),
+    [safeClasses]
+  );
+  const availableDays = useMemo(() => {
+    const daySet = new Set<WeekDay>();
+    safeClasses.forEach((item) => safeDays(item.days).forEach((day) => daySet.add(day)));
+    return Array.from(daySet);
+  }, [safeClasses]);
+  const filteredClasses = useMemo(
+    () => sortAndFilterClasses(safeClasses, { searchTerm, sortBy, selectedDays, selectedInstructors }),
+    [safeClasses, searchTerm, sortBy, selectedDays, selectedInstructors]
+  );
 
   function openNewForm(defaults: Partial<ClassPayload> = {}) {
     setEditingClass(null);
