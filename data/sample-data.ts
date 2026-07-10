@@ -8,6 +8,7 @@ export const defaultSettings: TimetableSettings = {
   intervalMinutes: 50,
   semester: "",
   studentName: "",
+  language: "th",
   timeSlots: [
     "08:00",
     "08:50",
