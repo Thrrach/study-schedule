@@ -6,6 +6,7 @@ import { getSubjectTheme } from "@/lib/subject-theme";
 import { safeDays } from "@/lib/subject-utils";
 import type { ClassItem } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
+import { useTranslation } from "@/lib/i18n";
 
 interface SubjectDetailDialogProps {
   item: ClassItem | null;
@@ -14,21 +15,22 @@ interface SubjectDetailDialogProps {
 }
 
 export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailDialogProps) {
+  const { t, language } = useTranslation();
   const theme = item ? getSubjectTheme(item) : null;
   const dayLabels = item
     ? safeDays(item.days)
-        .map((day) => weekDays.find((weekDay) => weekDay.key === day)?.label ?? day)
+        .map((day) => language === "en" ? weekDays.find((weekDay) => weekDay.key === day)?.labelEn : weekDays.find((weekDay) => weekDay.key === day)?.labelTh ?? day)
     : [];
   const shortDayLabels = item
     ? safeDays(item.days)
-        .map((day) => weekDays.find((weekDay) => weekDay.key === day)?.shortLabel ?? day)
+        .map((day) => language === "en" ? weekDays.find((weekDay) => weekDay.key === day)?.shortLabelEn : weekDays.find((weekDay) => weekDay.key === day)?.shortLabelTh ?? day)
     : [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>รายละเอียดรายวิชา</DialogTitle>
+          <DialogTitle>{t("dialog.detailTitle")}</DialogTitle>
         </DialogHeader>
         {item && theme ? (
           <div className="space-y-5">
@@ -42,7 +44,7 @@ export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailD
                     {item.courseCode}
                   </div>
                   <div className="rounded-full bg-white/75 px-2.5 py-1 text-xs font-semibold ring-1 ring-black/5">
-                    กลุ่ม {item.section || "-"}
+                    {t("card.sec")} {item.section || "-"}
                   </div>
                 </div>
                 <h2 className="mt-3 text-xl font-semibold leading-snug">{item.courseName}</h2>
@@ -59,10 +61,10 @@ export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailD
             </div>
 
             <dl className="grid gap-3 sm:grid-cols-2">
-              <Detail icon={<UserRound className="h-4 w-4" />} label="อาจารย์" value={item.instructor || "-"} />
-              <Detail icon={<MapPin className="h-4 w-4" />} label="ห้องเรียน" value={item.room || "-"} />
-              <Detail icon={<CalendarDays className="h-4 w-4" />} label="วันเรียน" value={dayLabels.join(", ") || "-"} />
-              <Detail icon={<Clock3 className="h-4 w-4" />} label="เวลาเรียน" value={`${item.startTime} - ${item.endTime}`} />
+              <Detail icon={<UserRound className="h-4 w-4" />} label={t("form.instructor")} value={item.instructor || "-"} />
+              <Detail icon={<MapPin className="h-4 w-4" />} label={t("form.room")} value={item.room || "-"} />
+              <Detail icon={<CalendarDays className="h-4 w-4" />} label={t("form.days")} value={dayLabels.join(", ") || "-"} />
+              <Detail icon={<Clock3 className="h-4 w-4" />} label={t("filter.sortTime")} value={`${item.startTime} - ${item.endTime}`} />
             </dl>
 
             <div className="flex flex-wrap gap-2">
@@ -76,9 +78,9 @@ export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailD
             <div className="rounded-lg border bg-slate-50 p-4">
               <dt className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                 <StickyNote className="h-4 w-4" />
-                คำอธิบายรายวิชา
+                {t("dialog.detailNote")}
               </dt>
-              <dd className="mt-2 text-sm leading-6 text-slate-600">{item.note || "ยังไม่มีคำอธิบายเพิ่มเติม"}</dd>
+              <dd className="mt-2 text-sm leading-6 text-slate-600">{item.note || t("dialog.noNote")}</dd>
             </div>
           </div>
         ) : null}
