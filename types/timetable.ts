@@ -8,6 +8,7 @@ export type Day =
 export type WeekDay = Day;
 
 export type ImageFormat = "png" | "jpeg";
+export type Language = "th" | "en";
 
 export interface ClassItem {
   id: string;
@@ -32,6 +33,7 @@ export interface TimetableSettings {
   timeSlots: string[];
   semester?: string;
   studentName?: string;
+  language?: Language;
 }
 
 export interface TimetableBackup {
@@ -41,10 +43,10 @@ export interface TimetableBackup {
   classes: ClassItem[];
 }
 
-export const weekDays: Array<{ key: Day; label: string; shortLabel: string }> = [
-  { key: "Monday", label: "วันจันทร์", shortLabel: "จ." },
-  { key: "Tuesday", label: "วันอังคาร", shortLabel: "อ." },
-  { key: "Wednesday", label: "วันพุธ", shortLabel: "พ." },
-  { key: "Thursday", label: "วันพฤหัสบดี", shortLabel: "พฤ." },
-  { key: "Friday", label: "วันศุกร์", shortLabel: "ศ." }
+export const weekDays: Array<{ key: Day; labelTh: string; labelEn: string; shortLabelTh: string; shortLabelEn: string }> = [
+  { key: "Monday", labelTh: "วันจันทร์", labelEn: "Monday", shortLabelTh: "จ.", shortLabelEn: "Mon" },
+  { key: "Tuesday", labelTh: "วันอังคาร", labelEn: "Tuesday", shortLabelTh: "อ.", shortLabelEn: "Tue" },
+  { key: "Wednesday", labelTh: "วันพุธ", labelEn: "Wednesday", shortLabelTh: "พ.", shortLabelEn: "Wed" },
+  { key: "Thursday", labelTh: "วันพฤหัสบดี", labelEn: "Thursday", shortLabelTh: "พฤ.", shortLabelEn: "Thu" },
+  { key: "Friday", labelTh: "วันศุกร์", labelEn: "Friday", shortLabelTh: "ศ.", shortLabelEn: "Fri" }
 ];
