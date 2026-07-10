@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { CalendarDays } from "lucide-react";
 import { ClassCard } from "@/components/ClassCard";
 import { buildHourLabels, durationToWidth, minutesToTime, timeToMinutes, timeToTimelineOffset } from "@/lib/time";
 import { cn } from "@/lib/utils";
@@ -90,22 +91,29 @@ function ExportHeader({
   width: number;
 }) {
   return (
-    <div className="export-only mb-4 hidden border-b border-slate-200 pb-4" style={{ width }}>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase text-primary">มหาวิทยาลัยสงขลานครินทร์</p>
-          <h2 className="mt-1 text-2xl font-semibold text-slate-950">ตารางเรียน</h2>
+    <div className="export-only mb-6 hidden rounded-2xl bg-gradient-to-r from-primary/10 via-white to-white p-6 shadow-sm ring-1 ring-slate-200" style={{ width: width - 32, marginLeft: 16 }}>
+      <div className="flex items-center justify-between gap-6">
+        <div className="flex items-center gap-5">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-md shadow-primary/20">
+            <CalendarDays className="h-8 w-8" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900">ตารางเรียน</h2>
+            <p className="mt-1 text-sm font-semibold tracking-wide text-primary uppercase">มหาวิทยาลัยสงขลานครินทร์</p>
+          </div>
         </div>
-        <div className="grid gap-1 text-right text-sm text-slate-600">
-          <p>
-            <span className="font-semibold text-slate-800">ภาคเรียน:</span> {meta.semester || "-"}
-          </p>
-          <p>
-            <span className="font-semibold text-slate-800">ชื่อผู้เรียน:</span> {meta.studentName || "-"}
-          </p>
-          <p>
-            <span className="font-semibold text-slate-800">วันที่ส่งออก:</span> {meta.exportedAt}
-          </p>
+        <div className="flex flex-col items-end justify-center gap-2 border-l-2 border-slate-100 pl-6 text-sm">
+          <div className="flex items-center gap-3">
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">ภาคเรียน</span>
+            <span className="font-medium text-slate-900">{meta.semester || "-"}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">ชื่อผู้เรียน</span>
+            <span className="font-medium text-slate-900">{meta.studentName || "-"}</span>
+          </div>
+          <div className="mt-1 text-xs text-slate-400">
+            อัปเดตข้อมูล ณ วันที่ {meta.exportedAt}
+          </div>
         </div>
       </div>
     </div>
