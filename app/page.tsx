@@ -37,9 +37,8 @@ import { normalizeClasses, safeDays } from "@/lib/subject-utils";
 import { cn } from "@/lib/utils";
 import type { ClassItem, ImageFormat, TimetableBackup, TimetableSettings } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
+import { useTranslation } from "@/lib/i18n";
 import dayjs from "dayjs";
-import buddhistEra from "dayjs/plugin/buddhistEra";
-import "dayjs/locale/th";
 
 dayjs.extend(buddhistEra);
 
@@ -67,6 +66,7 @@ export default function Home() {
     replaceAll,
     findOverlaps
   } = useTimetableStore();
+  const { t, language } = useTranslation();
 
   const [formOpen, setFormOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -209,18 +209,18 @@ export default function Home() {
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-primary">
                 <CalendarDays className="h-4 w-4" />
-                ระบบจัดตารางเรียน PSU
+                {t("app.title")}
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">ตารางเรียนของคุณ</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">{t("app.subtitle")}</h1>
             </div>
 
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
               <Select value={settings.semester || "none"} onValueChange={(semester) => updateSettings({ ...settings, semester: semester === "none" ? "" : semester })}>
-                <SelectTrigger className="w-full sm:w-[190px]" aria-label="ภาคเรียน">
-                  <SelectValue placeholder="ภาคเรียน">{settings.semester || "ภาคเรียน"}</SelectValue>
+                <SelectTrigger className="w-full sm:w-[190px]" aria-label={t("app.semester")}>
+                  <SelectValue placeholder={t("app.semester")}>{settings.semester || t("app.semesterPlaceholder")}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">ภาคเรียน</SelectItem>
+                  <SelectItem value="none">{t("app.semesterPlaceholder")}</SelectItem>
                   {semesterOptions.map((semester) => (
                     <SelectItem key={semester} value={semester}>
                       {semester}
@@ -231,17 +231,26 @@ export default function Home() {
 
               <div className="inline-flex w-full rounded-md border bg-slate-50 p-1 sm:w-auto" aria-label="มุมมองตารางเรียน">
                 <Button type="button" variant={viewMode === "grid" ? "secondary" : "ghost"} size="sm" className="h-8 flex-1 sm:flex-none" onClick={() => setViewMode("grid")}>
-                  <Grid3X3 className="h-4 w-4" /> ตาราง
+                  <Grid3X3 className="h-4 w-4" /> {t("app.viewGrid")}
                 </Button>
                 <Button type="button" variant={viewMode === "list" ? "secondary" : "ghost"} size="sm" className="h-8 flex-1 sm:flex-none" onClick={() => setViewMode("list")}>
-                  <List className="h-4 w-4" /> รายการ
+                  <List className="h-4 w-4" /> {t("app.viewList")}
                 </Button>
               </div>
 
               <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs()))} />
               <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setToolsOpen(true)}>
                 <SlidersHorizontal className="h-4 w-4" />
-                เครื่องมือ
+                {t("app.tools")}
+              </Button>
+              
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full sm:w-auto font-semibold" 
+                onClick={() => updateSettings({ ...settings, language: language === "th" ? "en" : "th" })}
+              >
+                {language === "th" ? "EN" : "TH"}
               </Button>
             </div>
           </div>

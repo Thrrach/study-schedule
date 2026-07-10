@@ -165,6 +165,7 @@ function normalizeSettings(rawSettings: unknown, fallback: TimetableSettings): T
   const intervalMinutes = normalizeInterval(raw.intervalMinutes, fallback.intervalMinutes);
   const semester = stringValue(raw.semester, fallback.semester ?? "");
   const studentName = stringValue(raw.studentName, fallback.studentName ?? "");
+  const language = raw.language === "en" || raw.language === "th" ? raw.language : (fallback.language ?? "th");
 
   if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
     return {
@@ -172,7 +173,8 @@ function normalizeSettings(rawSettings: unknown, fallback: TimetableSettings): T
       intervalMinutes,
       timeSlots,
       semester,
-      studentName
+      studentName,
+      language
     };
   }
 
@@ -182,7 +184,8 @@ function normalizeSettings(rawSettings: unknown, fallback: TimetableSettings): T
     intervalMinutes,
     timeSlots,
     semester,
-    studentName
+    studentName,
+    language
   };
 }
 
