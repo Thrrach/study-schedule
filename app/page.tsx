@@ -39,6 +39,9 @@ import type { ClassItem, ImageFormat, TimetableBackup, TimetableSettings } from 
 import { weekDays } from "@/types/timetable";
 import { useTranslation } from "@/lib/i18n";
 import dayjs from "dayjs";
+import buddhistEra from "dayjs/plugin/buddhistEra";
+import "dayjs/locale/th";
+import "dayjs/locale/en";
 
 dayjs.extend(buddhistEra);
 
@@ -79,7 +82,7 @@ export default function Home() {
   const [imageFormat, setImageFormat] = useState<ImageFormat>("png");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [importError, setImportError] = useState("");
-  const [exportDate, setExportDate] = useState(() => formatExportDate(dayjs()));
+  const [exportDate, setExportDate] = useState(() => formatExportDate(dayjs(), language));
   const [sortBy, setSortBy] = useState<SortBy>("day");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDays, setSelectedDays] = useState<WeekDay[]>([]);
@@ -238,7 +241,7 @@ export default function Home() {
                 </Button>
               </div>
 
-              <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs()))} />
+              <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs(), language))} />
               <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setToolsOpen(true)}>
                 <SlidersHorizontal className="h-4 w-4" />
                 {t("app.tools")}
@@ -261,13 +264,13 @@ export default function Home() {
             <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-[1.35fr_0.65fr]">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">ค้นหารายวิชา</Label>
+                  <Label className="text-sm font-semibold text-slate-700">{t("filter.searchLabel")}</Label>
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <Input
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="รหัสวิชา ชื่อวิชา อาจารย์ หรือห้อง"
+                      placeholder={t("filter.searchPlaceholder")}
                       className="h-11 pl-10 pr-10"
                     />
                     {searchTerm ? (
@@ -275,7 +278,7 @@ export default function Home() {
                         type="button"
                         onClick={() => setSearchTerm("")}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
-                        aria-label="ล้างการค้นหา"
+                        aria-label={t("filter.clearSearch")}
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -284,16 +287,16 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">เรียงลำดับ</Label>
+                  <Label className="text-sm font-semibold text-slate-700">{t("filter.sortLabel")}</Label>
                   <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
-                    <SelectTrigger className="h-11 w-full" aria-label="เรียงลำดับ">
+                    <SelectTrigger className="h-11 w-full" aria-label={t("filter.sortLabel")}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="day">วันและเวลา</SelectItem>
-                      <SelectItem value="time">เวลา</SelectItem>
-                      <SelectItem value="code">รหัสวิชา</SelectItem>
-                      <SelectItem value="name">ชื่อวิชา</SelectItem>
+                      <SelectItem value="day">{t("filter.sortDayTime")}</SelectItem>
+                      <SelectItem value="time">{t("filter.sortTime")}</SelectItem>
+                      <SelectItem value="code">{t("filter.sortCode")}</SelectItem>
+                      <SelectItem value="name">{t("filter.sortName")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -301,10 +304,10 @@ export default function Home() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-700">กรองตามวัน</p>
+                  <p className="text-sm font-semibold text-slate-700">{t("filter.filterDay")}</p>
                   {selectedDays.length > 0 ? (
                     <button type="button" className="text-xs font-medium text-slate-500 hover:text-slate-700" onClick={() => setSelectedDays([])}>
-                      ล้างวัน
+                      {t("filter.clearDay")}
                     </button>
                   ) : null}
                 </div>
@@ -330,22 +333,22 @@ export default function Home() {
                               : "border-slate-200 bg-slate-50 text-slate-700 hover:border-primary hover:bg-sky-50 hover:text-primary"
                           )}
                         >
-                          {dayLabel}
+                          {language === "en" ? weekDays.find((item) => item.key === day)?.shortLabelEn : weekDays.find((item) => item.key === day)?.shortLabelTh ?? dayLabel}
                         </button>
                       );
                     })
                   ) : (
-                    <p className="text-sm text-slate-500">ยังไม่มีรายวิชาให้กรองตามวัน</p>
+                    <p className="text-sm text-slate-500">{t("filter.noDayData")}</p>
                   )}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-700">กรองตามอาจารย์</p>
+                  <p className="text-sm font-semibold text-slate-700">{t("filter.filterInstructor")}</p>
                   {selectedInstructors.length > 0 ? (
                     <button type="button" className="text-xs font-medium text-slate-500 hover:text-slate-700" onClick={() => setSelectedInstructors([])}>
-                      ล้างอาจารย์
+                      {t("filter.clearInstructor")}
                     </button>
                   ) : null}
                 </div>
@@ -375,7 +378,7 @@ export default function Home() {
                       );
                     })
                   ) : (
-                    <p className="text-sm text-slate-500">ยังไม่มีรายวิชาให้กรองตามอาจารย์</p>
+                    <p className="text-sm text-slate-500">{t("filter.noInstructorData")}</p>
                   )}
                 </div>
               </div>
@@ -387,8 +390,8 @@ export default function Home() {
                   <Search className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{filteredClasses.length} รายวิชา</p>
-                  <p className="text-xs text-slate-500">แสดงผลตามตัวกรองและการเรียงลำดับ</p>
+                  <p className="text-sm font-semibold text-slate-900">{t("results.coursesCount", { count: filteredClasses.length })}</p>
+                  <p className="text-xs text-slate-500">{t("results.filteredSubtext")}</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -404,12 +407,12 @@ export default function Home() {
                     }}
                   >
                     <X className="h-4 w-4" />
-                    ล้างทั้งหมด
+                    {t("results.clearAll")}
                   </Button>
                 ) : null}
                 <Button type="button" variant="ghost" className="flex-1" onClick={() => setToolsOpen(true)}>
                   <SlidersHorizontal className="h-4 w-4" />
-                  ตั้งค่า
+                  {t("results.settings")}
                 </Button>
               </div>
             </div>
@@ -417,14 +420,14 @@ export default function Home() {
         </section>
 
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 no-print">
-          <Metric label="รายวิชา" value={safeClasses.length.toString()} />
-          <Metric label="ตารางชนกัน" value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
-          <Metric label="ช่วงเวลาที่แสดง" value={`${DISPLAY_START}-${DISPLAY_END}`} />
+          <Metric label={t("metrics.courses")} value={safeClasses.length.toString()} />
+          <Metric label={t("metrics.overlaps")} value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
+          <Metric label={t("metrics.displayTime")} value={`${DISPLAY_START}-${DISPLAY_END}`} />
           <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold">บันทึกอัตโนมัติแล้ว</p>
-              <p className="text-xs text-slate-500">ข้อมูลจะเก็บไว้ในเครื่องนี้โดยอัตโนมัติ</p>
+              <p className="text-sm font-semibold">{t("metrics.autoSaved")}</p>
+              <p className="text-xs text-slate-500">{t("metrics.autoSavedDesc")}</p>
             </div>
           </div>
         </section>
@@ -452,7 +455,7 @@ export default function Home() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingClass ? "แก้ไขรายวิชา" : "เพิ่มรายวิชา"}</DialogTitle>
+            <DialogTitle>{editingClass ? t("form.editTitle") : t("form.addTitle")}</DialogTitle>
           </DialogHeader>
           <ClassForm
             initialValue={editingClass}
@@ -482,26 +485,26 @@ export default function Home() {
       <Dialog open={toolsOpen} onOpenChange={setToolsOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>ตั้งค่าและจัดการตาราง</DialogTitle>
+            <DialogTitle>{t("tools.title")}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-5 md:grid-cols-2">
             <section className="rounded-lg border bg-slate-50/70 p-4">
               <div className="mb-4 flex items-center gap-2 font-semibold">
                 <HardDrive className="h-4 w-4" />
-                การตั้งค่าตารางและข้อมูลส่วนตัว
+                {t("tools.settingsSection")}
               </div>
               <SettingsForm settings={settings} onChange={updateSettings} semesterOptions={semesterOptions} />
             </section>
             <section className="rounded-lg border bg-slate-50/70 p-4">
               <div className="mb-1 flex items-center gap-2 font-semibold">
                 <FileDown className="h-4 w-4" />
-                จัดการรายวิชาและส่งออก
+                {t("tools.exportSection")}
               </div>
-              <p className="mb-4 text-sm text-slate-500">เพิ่มรายวิชา ส่งออกรูปตาราง หรือสำรองข้อมูล JSON ไว้สำหรับย้ายไปใช้อีกเครื่อง</p>
+              <p className="mb-4 text-sm text-slate-500">{t("tools.exportDesc")}</p>
               <div className="space-y-3">
                 <Button onClick={() => openNewForm()} className="w-full justify-start">
                   <Plus className="h-4 w-4" />
-                  เพิ่มรายวิชา
+                  {t("tools.addClass")}
                 </Button>
                 <Select value={imageFormat} onValueChange={(value) => setImageFormat(value as ImageFormat)}>
                   <SelectTrigger aria-label="รูปแบบไฟล์ภาพ">
@@ -512,15 +515,15 @@ export default function Home() {
                     <SelectItem value="jpeg">JPEG</SelectItem>
                   </SelectContent>
                 </Select>
-                <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs()))} />
+                <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs(), language))} />
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" onClick={exportJson}>
                     <FileDown className="h-4 w-4" />
-                    สำรองข้อมูล JSON
+                    {t("tools.backupJson")}
                   </Button>
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                     <FileUp className="h-4 w-4" />
-                    นำเข้าข้อมูล
+                    {t("tools.importJson")}
                   </Button>
                 </div>
                 <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={importJson} />
@@ -534,7 +537,7 @@ export default function Home() {
                   className="w-full justify-start"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  คืนค่าข้อมูลตัวอย่าง
+                  {t("tools.resetSample")}
                 </Button>
               </div>
             </section>
@@ -547,20 +550,20 @@ export default function Home() {
       <Dialog open={Boolean(classToDelete)} onOpenChange={(open) => !open && setClassToDelete(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>ต้องการลบรายวิชานี้ใช่ไหม?</DialogTitle>
+            <DialogTitle>{t("dialog.deleteConfirm")}</DialogTitle>
           </DialogHeader>
           <div className="flex gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-900">
             <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" />
             <p>
-              {classToDelete?.courseCode} {classToDelete?.courseName} จะถูกลบออกจากทุกวันที่เลือกไว้
+              {t("dialog.deleteWarning", { code: classToDelete?.courseCode ?? "", name: classToDelete?.courseName ?? "" })}
             </p>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setClassToDelete(null)}>
-              ยกเลิก
+              {t("form.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDeleteClass}>
-              ลบรายวิชา
+              {t("dialog.deleteBtn")}
             </Button>
           </div>
         </DialogContent>
@@ -569,14 +572,14 @@ export default function Home() {
       <Dialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>ต้องการคืนค่าข้อมูลตัวอย่างใช่ไหม?</DialogTitle>
+            <DialogTitle>{t("dialog.resetConfirm")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-slate-600">
-            รายวิชาและการตั้งค่าปัจจุบันจะถูกแทนที่ด้วยข้อมูลตัวอย่าง แนะนำให้สำรองข้อมูล JSON ก่อน หากยังต้องการเก็บไว้
+            {t("dialog.resetWarning")}
           </p>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setResetConfirmOpen(false)}>
-              ยกเลิก
+              {t("form.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -604,6 +607,7 @@ function SettingsForm({
   onChange: (settings: TimetableSettings) => void;
   semesterOptions: string[];
 }) {
+  const { t } = useTranslation();
   const baseTimeOptions = useMemo(() => buildTimeOptions(10), []);
   const slots = useMemo(
     () => generateTimeSlots(settings),
@@ -649,20 +653,20 @@ function SettingsForm({
   return (
     <div className="space-y-4">
       <div className="grid gap-3">
-        <Field label="ชื่อผู้เรียน">
+        <Field label={t("settings.studentName")}>
           <Input
             value={settings.studentName ?? ""}
             onChange={(event) => onChange({ ...settings, studentName: event.target.value })}
-            placeholder="เช่น นายสมชาย ใจดี"
+            placeholder={t("settings.studentNamePlaceholder")}
           />
         </Field>
-        <Field label="ภาคเรียน">
+        <Field label={t("app.semester")}>
           <Select value={settings.semester || "none"} onValueChange={(semester) => onChange({ ...settings, semester: semester === "none" ? "" : semester })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">ยังไม่ระบุ</SelectItem>
+              <SelectItem value="none">{t("app.semesterPlaceholder")}</SelectItem>
               {semesterOptions.map((semester) => (
                 <SelectItem key={semester} value={semester}>
                   {semester}
@@ -674,11 +678,11 @@ function SettingsForm({
       </div>
 
       <div className="rounded-md border border-sky-100 bg-sky-50 p-3 text-sm text-sky-900">
-        ตารางบนหน้าจอและไฟล์รูปจะยึดช่วงเวลา {DISPLAY_START}-{DISPLAY_END} เสมอ
+        {t("settings.timeNote", { start: DISPLAY_START, end: DISPLAY_END })}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="เริ่ม">
+        <Field label={t("settings.start")}>
           <Select value={settings.startTime} onValueChange={(startTime) => updateGeneratedRange({ startTime })}>
             <SelectTrigger>
               <SelectValue />
@@ -692,7 +696,7 @@ function SettingsForm({
             </SelectContent>
           </Select>
         </Field>
-        <Field label="สิ้นสุด">
+        <Field label={t("settings.end")}>
           <Select value={settings.endTime} onValueChange={(endTime) => updateGeneratedRange({ endTime })}>
             <SelectTrigger>
               <SelectValue />
@@ -708,7 +712,7 @@ function SettingsForm({
         </Field>
       </div>
 
-      <Field label="ระยะห่าง (นาที)">
+      <Field label={t("settings.interval")}>
         <Input
           type="number"
           min={5}
@@ -720,16 +724,16 @@ function SettingsForm({
       </Field>
 
       <Button type="button" variant="outline" className="w-full" onClick={() => setSlots(generateTimeSlots({ ...settings, timeSlots: [] }))}>
-        สร้างช่วงเวลาอีกครั้ง
+        {t("settings.regenerateSlots")}
       </Button>
 
       <details className="group rounded-lg border bg-white p-3">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">กำหนดช่วงเวลาเอง</summary>
+        <summary className="cursor-pointer text-sm font-medium text-slate-700">{t("settings.customSlots")}</summary>
         <div className="mt-3 space-y-2">
           <div className="flex gap-2">
             <Input type="time" value={newSlot} onChange={(event) => setNewSlot(event.target.value)} />
             <Button type="button" variant="secondary" onClick={() => isValidTime(newSlot) && setSlots([...slots, newSlot])}>
-              <Plus className="h-4 w-4" /> เพิ่มช่วงเวลา
+              <Plus className="h-4 w-4" /> {t("settings.addSlot")}
             </Button>
           </div>
           <div className="max-h-72 space-y-2 overflow-auto pr-1">
@@ -751,7 +755,7 @@ function SettingsForm({
         </div>
       </details>
 
-      {invalidRange ? <p className="text-sm text-destructive">เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</p> : null}
+      {invalidRange ? <p className="text-sm text-destructive">{t("settings.invalidRange")}</p> : null}
     </div>
   );
 }
@@ -896,8 +900,11 @@ function normalizeImport(value: RawTimetableImport): TimetableBackup {
   };
 }
 
-function formatExportDate(date: dayjs.Dayjs) {
-  return date.locale("th").format("D MMMM BBBB HH:mm");
+function formatExportDate(date: dayjs.Dayjs, lang: "th" | "en") {
+  if (lang === "en") {
+    return date.locale("en").format("MMMM D, YYYY HH:mm");
+  }
+  return date.locale("th").format("D MMMM BBBB เวลา HH:mm น.");
 }
 
 function weekDayIndex(day: string): number {

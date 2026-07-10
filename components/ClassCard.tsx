@@ -7,6 +7,7 @@ import { safeDays } from "@/lib/subject-utils";
 import { cn } from "@/lib/utils";
 import type { ClassItem, WeekDay } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
+import { useTranslation } from "@/lib/i18n";
 
 interface ClassCardProps {
   item: ClassItem;
@@ -19,9 +20,10 @@ interface ClassCardProps {
 }
 
 export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate, onDelete }: ClassCardProps) {
+  const { t, language } = useTranslation();
   const theme = getSubjectTheme(item);
   const dayLabels = safeDays(item.days)
-    .map((day) => weekDays.find((weekDay) => weekDay.key === day)?.shortLabel ?? day)
+    .map((day) => language === "en" ? weekDays.find((weekDay) => weekDay.key === day)?.shortLabelEn : weekDays.find((weekDay) => weekDay.key === day)?.shortLabelTh ?? day)
     .join(", ");
   const metaItems = [
     item.room ? { icon: <MapPin className="h-3.5 w-3.5" />, value: item.room } : null,
@@ -74,7 +76,7 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
           </p>
         </div>
         <span className="shrink-0 rounded border bg-white/75 px-1.5 py-0.5 text-[11px] font-semibold leading-none">
-          กลุ่ม {item.section || "-"}
+          {t("card.sec")} {item.section || "-"}
         </span>
       </div>
 
@@ -107,11 +109,10 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
         <p className="font-semibold text-slate-950">
           {item.courseCode} {item.courseName}
         </p>
-        <p>อาจารย์: {item.instructor || "-"}</p>
-        <p>ห้องเรียน: {item.room || "-"}</p>
-        <p>วันเรียน: {dayLabels || "-"}</p>
-        <p>เวลาเรียน: {item.startTime} - {item.endTime}</p>
-        <p>หน่วยกิต: -</p>
+        <p>{t("form.instructor")}: {item.instructor || "-"}</p>
+        <p>{t("form.room")}: {item.room || "-"}</p>
+        <p>{t("form.days")}: {dayLabels || "-"}</p>
+        <p>{t("filter.sortTime")}: {item.startTime} - {item.endTime}</p>
       </div>
 
       <div

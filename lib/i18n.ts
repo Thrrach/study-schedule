@@ -95,6 +95,9 @@ const th = {
   "dialog.resetConfirm": "ต้องการคืนค่าข้อมูลตัวอย่างใช่ไหม?",
   "dialog.resetWarning": "รายวิชาและการตั้งค่าปัจจุบันจะถูกแทนที่ด้วยข้อมูลตัวอย่าง แนะนำให้สำรองข้อมูล JSON ก่อน หากยังต้องการเก็บไว้",
   "dialog.resetBtn": "คืนค่าข้อมูลตัวอย่าง",
+  "dialog.detailTitle": "รายละเอียดรายวิชา",
+  "dialog.detailNote": "คำอธิบายรายวิชา",
+  "dialog.noNote": "ยังไม่มีคำอธิบายเพิ่มเติม",
 
   // Card & List
   "card.sec": "Sec",
@@ -189,6 +192,9 @@ const en: typeof th = {
   "dialog.resetConfirm": "Restore sample data?",
   "dialog.resetWarning": "Current courses and settings will be replaced with sample data. Recommend backing up JSON first if you want to keep them.",
   "dialog.resetBtn": "Restore Sample Data",
+  "dialog.detailTitle": "Course Details",
+  "dialog.detailNote": "Course Description",
+  "dialog.noNote": "No additional description",
 
   "card.sec": "Sec",
   "card.room": "Room",
