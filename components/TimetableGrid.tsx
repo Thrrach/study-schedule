@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { safeDays } from "@/lib/subject-utils";
 import type { ClassItem, WeekDay } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
+import { useTranslation } from "@/lib/i18n";
 
 const TIMETABLE_START = "08:00";
 const TIMETABLE_END = "16:00";
@@ -43,6 +44,7 @@ export function TimetableGrid({
   onDuplicate,
   onDelete
 }: TimetableGridProps) {
+  const { t, language } = useTranslation();
   const safeClasses = Array.isArray(classes) ? classes : [];
   const { timelineStart, timelineEnd, timelineWidth, hourLabels } = useMemo(() => buildTimeline(), []);
   const gridWidth = DAY_COLUMN_WIDTH + timelineWidth;
@@ -63,7 +65,7 @@ export function TimetableGrid({
               <DayRow
                 key={day.key}
                 day={day.key}
-                dayLabel={day.label}
+                dayLabel={language === "en" ? day.labelEn : day.labelTh}
                 classes={safeClasses.filter((item) => safeDays(item.days).includes(day.key))}
                 timelineStart={timelineStart}
                 timelineEnd={timelineEnd}
@@ -90,6 +92,7 @@ function ExportHeader({
   meta: TimetableGridProps["exportMeta"];
   width: number;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="export-only mb-6 hidden rounded-2xl bg-gradient-to-r from-primary/10 via-white to-white p-6 shadow-sm ring-1 ring-slate-200" style={{ width: width - 32, marginLeft: 16 }}>
       <div className="flex items-center justify-between gap-6">
@@ -98,21 +101,21 @@ function ExportHeader({
             <CalendarDays className="h-8 w-8" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900">ตารางเรียน</h2>
-            <p className="mt-1 text-sm font-semibold tracking-wide text-primary uppercase">มหาวิทยาลัยสงขลานครินทร์</p>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900">{t("export.timetable")}</h2>
+            <p className="mt-1 text-sm font-semibold tracking-wide text-primary uppercase">{t("export.university")}</p>
           </div>
         </div>
         <div className="flex flex-col items-end justify-center gap-2 border-l-2 border-slate-100 pl-6 text-sm">
           <div className="flex items-center gap-3">
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">ภาคเรียน</span>
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">{t("app.semester")}</span>
             <span className="font-medium text-slate-900">{meta.semester || "-"}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">ชื่อผู้เรียน</span>
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">{t("settings.studentName")}</span>
             <span className="font-medium text-slate-900">{meta.studentName || "-"}</span>
           </div>
           <div className="mt-1 text-xs text-slate-400">
-            อัปเดตข้อมูล ณ วันที่ {meta.exportedAt}
+            {t("export.updatedAt", { date: meta.exportedAt })}
           </div>
         </div>
       </div>
@@ -184,6 +187,7 @@ function DayRow({
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const lanes = assignLanes(classes);
   const laneCount = Math.max(1, lanes.length);
   const rowHeight = Math.max(ROW_BASE_HEIGHT, ROW_VERTICAL_PADDING * 2 + laneCount * CARD_HEIGHT);
@@ -197,7 +201,7 @@ function DayRow({
       >
         <span>{dayLabel}</span>
         <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">
-          {classes.length} รายวิชา
+          {t("results.coursesCount", { count: classes.length })}
         </span>
       </div>
       <div className="relative overflow-visible border-b border-r border-slate-200 bg-white" style={{ width: timelineWidth, height: rowHeight }}>
@@ -275,10 +279,12 @@ function TimelineBackground({
     return minutesToTime(clamp(snappedMinutes, start, end - DROP_STEP_MINUTES));
   }
 
+  const { language } = useTranslation();
+  
   return (
     <div
       className="group absolute inset-0 cursor-crosshair border-l border-slate-300"
-      aria-label={`เพิ่มรายวิชาใน${weekDays.find((item) => item.key === day)?.label ?? day}`}
+      aria-label={`Add class to ${language === "en" ? weekDays.find((item) => item.key === day)?.labelEn : weekDays.find((item) => item.key === day)?.labelTh}`}
       onClick={(event) => onAddClassAt(day, eventToTime(event))}
       onDragOver={(event) => {
         event.preventDefault();

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "@/lib/i18n";
 
 type ClassPayload = Omit<ClassItem, "id" | "createdAt" | "updatedAt">;
 
@@ -50,19 +51,20 @@ export function ClassForm({
   onPreview,
   onSubmit,
   onCancel
-}: ClassFormProps) {
-  const [value, setValue] = useState<ClassPayload>(() => ({
-    ...emptyClass,
-    ...(defaultValue ?? {}),
-    ...(initialValue ?? {}),
-    days: safeDays(initialValue?.days ?? defaultValue?.days ?? emptyClass.days)
-  }));
-  const [submitted, setSubmitted] = useState(false);
-  const selectedDays = safeDays(value.days);
-  const selectableTimes = useMemo(
-    () => Array.from(new Set([...(Array.isArray(timeOptions) ? timeOptions : []), ...buildTimeOptions(10)])).sort((a, b) => timeToMinutes(a) - timeToMinutes(b)),
-    [timeOptions]
-  );
+  }: ClassFormProps) {
+    const { t, language } = useTranslation();
+    const [value, setValue] = useState<ClassPayload>(() => ({
+      ...emptyClass,
+      ...(defaultValue ?? {}),
+      ...(initialValue ?? {}),
+      days: safeDays(initialValue?.days ?? defaultValue?.days ?? emptyClass.days)
+    }));
+    const [submitted, setSubmitted] = useState(false);
+    const selectedDays = safeDays(value.days);
+    const selectableTimes = useMemo(
+      () => Array.from(new Set([...(Array.isArray(timeOptions) ? timeOptions : []), ...buildTimeOptions(10)])).sort((a, b) => timeToMinutes(a) - timeToMinutes(b)),
+      [timeOptions]
+    );
 
   const errors = {
     courseCode: !value.courseCode.trim(),
@@ -110,19 +112,19 @@ export function ClassForm({
         if (!hasErrors) onSubmit({ ...value, days: selectedDays });
       }}
     >
-      <p className="-mt-1 text-sm text-slate-500">กรอกข้อมูลหลักก่อน แล้วค่อยเติมผู้สอน ห้อง และหมายเหตุภายหลังได้</p>
+      <p className="-mt-1 text-sm text-slate-500">{language === "en" ? "Fill in the main information first, then add instructor, room, and notes later." : "กรอกข้อมูลหลักก่อน แล้วค่อยเติมผู้สอน ห้อง และหมายเหตุภายหลังได้"}</p>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="รหัสวิชา" error={submitted && errors.courseCode ? "จำเป็น" : undefined}>
-          <Input autoFocus value={value.courseCode} onChange={(event) => update("courseCode", event.target.value)} placeholder="เช่น 344-211" />
+        <Field label={t("form.code")} error={submitted && errors.courseCode ? t("form.required") : undefined}>
+          <Input autoFocus value={value.courseCode} onChange={(event) => update("courseCode", event.target.value)} placeholder={language === "en" ? "e.g., 344-211" : "เช่น 344-211"} />
         </Field>
-        <Field label="ชื่อวิชา" error={submitted && errors.courseName ? "จำเป็น" : undefined}>
-          <Input value={value.courseName} onChange={(event) => update("courseName", event.target.value)} placeholder="เช่น ระบบฐานข้อมูล" />
+        <Field label={t("form.name")} error={submitted && errors.courseName ? t("form.required") : undefined}>
+          <Input value={value.courseName} onChange={(event) => update("courseName", event.target.value)} placeholder={language === "en" ? "e.g., Database Systems" : "เช่น ระบบฐานข้อมูล"} />
         </Field>
-        <Field label="กลุ่มเรียน" error={submitted && errors.section ? "จำเป็น" : undefined}>
+        <Field label={t("form.section")} error={submitted && errors.section ? t("form.required") : undefined}>
           <Input value={value.section} onChange={(event) => update("section", event.target.value)} placeholder="01" />
         </Field>
-        <Field label="วันที่เรียน" error={submitted && errors.days ? "เลือกอย่างน้อย 1 วัน" : undefined}>
+        <Field label={t("form.days")} error={submitted && errors.days ? (language === "en" ? "Select at least 1 day" : "เลือกอย่างน้อย 1 วัน") : undefined}>
           <div className="flex flex-wrap gap-2 rounded-md border bg-slate-50 p-2">
             {weekDays.map((day) => (
               <button
@@ -137,14 +139,14 @@ export function ClassForm({
                 }}
                 className={`rounded-md border px-3 py-2 text-sm font-medium transition ${selectedDays.includes(day.key) ? "border-primary bg-primary text-white" : "border-slate-200 bg-white text-slate-700 hover:border-primary/40 hover:bg-sky-50"}`}
               >
-                {day.shortLabel}
+                {language === "en" ? day.shortLabelEn : day.shortLabelTh}
               </button>
             ))}
           </div>
         </Field>
         <Field
-          label="เวลาเริ่ม"
-          error={submitted && (errors.startTime || errors.range) ? `เลือกภายใน ${timetableStart}–${timetableEnd}` : undefined}
+          label={t("form.startTime")}
+          error={submitted && (errors.startTime || errors.range) ? (language === "en" ? `Select within ${timetableStart}–${timetableEnd}` : `เลือกภายใน ${timetableStart}–${timetableEnd}`) : undefined}
         >
           <Select value={value.startTime} onValueChange={updateStartTime}>
             <SelectTrigger>
@@ -160,8 +162,8 @@ export function ClassForm({
           </Select>
         </Field>
         <Field
-          label="เวลาสิ้นสุด"
-          error={submitted && (errors.endTime || errors.time || errors.range) ? "ต้องอยู่หลังเวลาเริ่มและไม่เกินช่วงตาราง" : undefined}
+          label={t("form.endTime")}
+          error={submitted && (errors.endTime || errors.time || errors.range) ? (language === "en" ? "Must be after start time and within timetable range" : "ต้องอยู่หลังเวลาเริ่มและไม่เกินช่วงตาราง") : undefined}
         >
           <Select value={value.endTime} onValueChange={(next) => update("endTime", next)}>
             <SelectTrigger>
@@ -184,7 +186,7 @@ export function ClassForm({
                 onClick={() => setDuration(minutes)}
                 className="rounded border bg-white px-2 py-1 text-xs text-slate-600 hover:border-primary/40 hover:text-primary"
               >
-                {minutes < 60 ? `${minutes} นาที` : `${minutes / 60} ชม.`}
+                {minutes < 60 ? (language === "en" ? `${minutes} mins` : `${minutes} นาที`) : (language === "en" ? `${minutes / 60} hrs` : `${minutes / 60} ชม.`)}
               </button>
             ))}
           </div>
@@ -194,17 +196,17 @@ export function ClassForm({
       <ColorPicker value={value.color} onChange={(color) => update("color", color)} />
 
       <details className="rounded-lg border bg-slate-50/70 p-3">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">ข้อมูลเพิ่มเติม (ไม่บังคับ)</summary>
+        <summary className="cursor-pointer text-sm font-medium text-slate-700">{language === "en" ? "Additional Information (Optional)" : "ข้อมูลเพิ่มเติม (ไม่บังคับ)"}</summary>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <Field label="ผู้สอน">
-            <Input value={value.instructor} onChange={(event) => update("instructor", event.target.value)} placeholder="ชื่อผู้สอน" />
+          <Field label={t("form.instructor")}>
+            <Input value={value.instructor} onChange={(event) => update("instructor", event.target.value)} placeholder={language === "en" ? "Instructor name" : "ชื่อผู้สอน"} />
           </Field>
-          <Field label="ห้อง / อาคาร">
-            <Input value={value.room} onChange={(event) => update("room", event.target.value)} placeholder="เช่น LRC 205" />
+          <Field label={t("form.room")}>
+            <Input value={value.room} onChange={(event) => update("room", event.target.value)} placeholder={language === "en" ? "e.g., LRC 205" : "เช่น LRC 205"} />
           </Field>
           <div className="md:col-span-2">
-            <Field label="หมายเหตุ">
-              <Textarea value={value.note ?? ""} onChange={(event) => update("note", event.target.value)} placeholder="เช่น กลุ่มแล็บ หรือสิ่งที่ต้องเตรียม" />
+            <Field label={t("form.note")}>
+              <Textarea value={value.note ?? ""} onChange={(event) => update("note", event.target.value)} placeholder={language === "en" ? "e.g., Lab group or required items" : "เช่น กลุ่มแล็บ หรือสิ่งที่ต้องเตรียม"} />
             </Field>
           </div>
         </div>
@@ -214,16 +216,16 @@ export function ClassForm({
         <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            เวลาชนกับวิชา {(Array.isArray(overlaps) ? overlaps : []).map((item) => item.courseCode).join(", ")} แต่ยังบันทึกได้ โดยระบบจะแยกเป็นอีกแถวให้
+            {language === "en" ? `Time overlaps with ${(Array.isArray(overlaps) ? overlaps : []).map((item) => item.courseCode).join(", ")} but can still be saved. The system will separate them into another row.` : `เวลาชนกับวิชา ${(Array.isArray(overlaps) ? overlaps : []).map((item) => item.courseCode).join(", ")} แต่ยังบันทึกได้ โดยระบบจะแยกเป็นอีกแถวให้`}
           </p>
         </div>
       ) : null}
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
-          ยกเลิก
+          {t("form.cancel")}
         </Button>
-        <Button type="submit">{initialValue ? "บันทึกการแก้ไข" : "เพิ่มลงตาราง"}</Button>
+        <Button type="submit">{t("form.save")}</Button>
       </div>
     </form>
   );

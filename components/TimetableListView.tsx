@@ -6,6 +6,7 @@ import { safeDays } from "@/lib/subject-utils";
 import { timeToMinutes } from "@/lib/time";
 import type { ClassItem } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
+import { useTranslation } from "@/lib/i18n";
 
 interface TimetableListViewProps {
   classes: ClassItem[];
@@ -13,6 +14,7 @@ interface TimetableListViewProps {
 }
 
 export function TimetableListView({ classes, onView }: TimetableListViewProps) {
+  const { t, language } = useTranslation();
   const safeClasses = Array.isArray(classes) ? classes : [];
 
   return (
@@ -25,9 +27,9 @@ export function TimetableListView({ classes, onView }: TimetableListViewProps) {
         return (
           <div key={day.key} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between gap-3 border-b bg-slate-50 px-4 py-3">
-              <div className="text-sm font-semibold text-slate-800">{day.label}</div>
+              <div className="text-sm font-semibold text-slate-800">{language === "en" ? day.labelEn : day.labelTh}</div>
               <div className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                {dayClasses.length} รายวิชา
+                {t("results.coursesCount", { count: dayClasses.length })}
               </div>
             </div>
             <div className="divide-y divide-slate-100">
@@ -46,7 +48,7 @@ export function TimetableListView({ classes, onView }: TimetableListViewProps) {
                         <Clock3 className="mt-0.5 h-4 w-4 text-slate-400" />
                         <div>
                           <div>{item.startTime} - {item.endTime}</div>
-                          <div className="mt-1 text-xs font-medium text-slate-500">กลุ่ม {item.section || "-"}</div>
+                          <div className="mt-1 text-xs font-medium text-slate-500">{t("card.sec")} {item.section || "-"}</div>
                         </div>
                       </div>
                       <div className="min-w-0">
@@ -80,7 +82,7 @@ export function TimetableListView({ classes, onView }: TimetableListViewProps) {
                   );
                 })
               ) : (
-                <div className="px-4 py-5 text-sm text-slate-500">วันนี้ไม่มีรายวิชา</div>
+                <div className="px-4 py-5 text-sm text-slate-500">{t("list.noClasses")}</div>
               )}
             </div>
           </div>

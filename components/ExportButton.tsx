@@ -6,6 +6,7 @@ import * as htmlToImage from "html-to-image";
 import type { ImageFormat } from "@/types/timetable";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface ExportButtonProps {
   targetId: string;
@@ -16,6 +17,7 @@ interface ExportButtonProps {
 }
 
 export function ExportButton({ targetId, format, onBeforeExport, className, variant = "secondary" }: ExportButtonProps) {
+  const { t, language } = useTranslation();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
@@ -64,7 +66,7 @@ export function ExportButton({ targetId, format, onBeforeExport, className, vari
       link.remove();
     } catch (error) {
       console.error("Could not export timetable image", error);
-      setExportError("ส่งออกรูปไม่สำเร็จ กรุณาลองอีกครั้ง");
+      setExportError(language === "en" ? "Export failed. Please try again." : "ส่งออกรูปไม่สำเร็จ กรุณาลองอีกครั้ง");
     } finally {
       delete node.dataset.exporting;
       setExporting(false);
@@ -78,10 +80,10 @@ export function ExportButton({ targetId, format, onBeforeExport, className, vari
         variant={variant}
         disabled={exporting}
         className={cn("w-full sm:w-auto transition-all duration-300", exporting ? "opacity-90" : "")}
-        aria-label={`ดาวน์โหลดตารางเป็น ${format.toUpperCase()}`}
+        aria-label={`${t("export.button")} ${format.toUpperCase()}`}
       >
         {exporting ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-        {exporting ? "กำลังส่งออก..." : `ส่งออก ${format.toUpperCase()}`}
+        {exporting ? t("export.exporting") : `${language === "en" ? "Export" : "ส่งออก"} ${format.toUpperCase()}`}
       </Button>
       {exportError ? (
         <p className="absolute -bottom-6 left-0 right-0 text-center text-xs font-medium text-destructive" role="alert">
