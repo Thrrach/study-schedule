@@ -5,14 +5,17 @@ import { Download, LoaderCircle } from "lucide-react";
 import * as htmlToImage from "html-to-image";
 import type { ImageFormat } from "@/types/timetable";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ExportButtonProps {
   targetId: string;
   format: ImageFormat;
   onBeforeExport?: () => void;
+  className?: string;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 }
 
-export function ExportButton({ targetId, format, onBeforeExport }: ExportButtonProps) {
+export function ExportButton({ targetId, format, onBeforeExport, className, variant = "secondary" }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
@@ -69,22 +72,19 @@ export function ExportButton({ targetId, format, onBeforeExport }: ExportButtonP
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs leading-relaxed text-amber-700">
-        ก่อนดาวน์โหลด โปรดตรวจสอบข้อมูลให้เรียบร้อย เนื้อหาที่ส่งออกจะอ้างอิงจากข้อมูลที่คุณกรอก และควรใช้ให้สอดคล้องกับระเบียบของมหาวิทยาลัย
-      </p>
+    <div className={cn("relative", className)}>
       <Button
         onClick={exportImage}
-        variant="secondary"
+        variant={variant}
         disabled={exporting}
-        className="w-full sm:w-auto"
+        className={cn("w-full sm:w-auto transition-all duration-300", exporting ? "opacity-90" : "")}
         aria-label={`ดาวน์โหลดตารางเป็น ${format.toUpperCase()}`}
       >
-        {exporting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        {exporting ? "กำลังส่งออก..." : "ดาวน์โหลด"}
+        {exporting ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+        {exporting ? "กำลังส่งออก..." : `ส่งออก ${format.toUpperCase()}`}
       </Button>
       {exportError ? (
-        <p className="text-sm text-destructive" role="alert">
+        <p className="absolute -bottom-6 left-0 right-0 text-center text-xs font-medium text-destructive" role="alert">
           {exportError}
         </p>
       ) : null}
