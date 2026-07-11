@@ -315,7 +315,7 @@ export default function Home() {
                   {availableDays.length > 0 ? (
                     availableDays.map((day) => {
                       const isSelected = selectedDays.includes(day);
-                      const dayLabel = weekDays.find((item) => item.key === day)?.shortLabel ?? day;
+                      const dayLabel = weekDays.find((item) => item.key === day)?.shortLabelTh ?? day;
 
                       return (
                         <button
@@ -611,7 +611,7 @@ function SettingsForm({
   const baseTimeOptions = useMemo(() => buildTimeOptions(10), []);
   const slots = useMemo(
     () => generateTimeSlots(settings),
-    [settings.startTime, settings.endTime, settings.intervalMinutes, settings.timeSlots]
+    [settings]
   );
   const invalidRange = timeToMinutes(settings.endTime) <= timeToMinutes(settings.startTime);
   const [newSlot, setNewSlot] = useState(slots[0] ?? "08:00");
