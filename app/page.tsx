@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/toast";
 import { defaultSettings } from "@/data/sample-data";
-import { useTimetableStore } from "@/lib/timetable-store";
+import { useTimetableController } from "@/controllers/timetable.controller";
 import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
 import { normalizeClasses, safeDays } from "@/lib/subject-utils";
 import { cn } from "@/lib/utils";
@@ -68,7 +68,7 @@ export default function Home() {
     resetSample,
     replaceAll,
     findOverlaps
-  } = useTimetableStore();
+  } = useTimetableController();
   const { t, language } = useTranslation();
 
   const [formOpen, setFormOpen] = useState(false);
