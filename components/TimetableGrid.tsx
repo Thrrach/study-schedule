@@ -44,7 +44,7 @@ export function TimetableGrid({
   onDuplicate,
   onDelete
 }: TimetableGridProps) {
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
   const safeClasses = Array.isArray(classes) ? classes : [];
   const { timelineStart, timelineEnd, timelineWidth, hourLabels } = useMemo(() => buildTimeline(), []);
   const gridWidth = DAY_COLUMN_WIDTH + timelineWidth;

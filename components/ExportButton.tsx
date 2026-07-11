@@ -13,7 +13,7 @@ interface ExportButtonProps {
   format: ImageFormat;
   onBeforeExport?: () => void;
   className?: string;
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost";
 }
 
 export function ExportButton({ targetId, format, onBeforeExport, className, variant = "secondary" }: ExportButtonProps) {

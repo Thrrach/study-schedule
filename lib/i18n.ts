@@ -1,4 +1,4 @@
-import { useTimetableStore } from "./timetable-store";
+import { useTimetableApi } from "@/api/timetable.api";
 
 const th = {
   // App Header
@@ -207,7 +207,7 @@ const dictionaries = { th, en };
 export type TranslationKey = keyof typeof th;
 
 export function useTranslation() {
-  const language = useTimetableStore((state) => state.settings.language) || "th";
+  const language = useTimetableApi((state) => state.settings.language) || "th";
   const dict = dictionaries[language];
 
   const t = (key: TranslationKey, params?: Record<string, string | number>) => {
