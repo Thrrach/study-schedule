@@ -1,5 +1,5 @@
 import { hasTimeOverlap, isValidTime, normalizeInterval, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
-import { normalizeClass, normalizeClasses, safeDays, subjectsShareDay } from "@/lib/subject-utils";
+import { normalizeClass, safeDays, subjectsShareDay } from "@/lib/subject-utils";
 import { uid } from "@/lib/utils";
 import type { ClassItem, TimetableSettings, WeekDay } from "@/types/timetable";
 
