@@ -7,7 +7,19 @@ import { defaultSettings, sampleClasses } from "@/data/sample-data";
 import type { ClassItem, TimetableBackup, TimetableSettings, WeekDay } from "@/types/timetable";
 
 export function useTimetableController() {
-  const { classes, settings, hydrated, setHydrated, setClasses, setSettings } = useTimetableApi();
+  const {
+    classes,
+    settings,
+    hydrated,
+    past,
+    future,
+    setHydrated,
+    setClasses,
+    setSettings,
+    replaceAll: replaceStoredState,
+    undo,
+    redo
+  } = useTimetableApi();
 
   const addClass = (item: Omit<ClassItem, "id" | "createdAt" | "updatedAt">) => {
     const newClass = timetableService.createClass(item);
@@ -45,13 +57,14 @@ export function useTimetableController() {
   };
 
   const resetSample = () => {
-    setClasses(normalizeClasses(sampleClasses));
-    setSettings(defaultSettings);
+    replaceStoredState(normalizeClasses(sampleClasses), defaultSettings);
   };
 
   const replaceAll = (backup: TimetableBackup) => {
-    setClasses(normalizeClasses(backup.classes));
-    setSettings(normalizeSettings(backup.settings, defaultSettings));
+    replaceStoredState(
+      normalizeClasses(backup.classes),
+      normalizeSettings(backup.settings, defaultSettings)
+    );
   };
 
   const findOverlaps = (candidate: Omit<ClassItem, "id" | "createdAt" | "updatedAt">, ignoreId?: string) => {
@@ -71,6 +84,10 @@ export function useTimetableController() {
     updateSettings,
     resetSample,
     replaceAll,
+    undo,
+    redo,
+    canUndo: past.length > 0,
+    canRedo: future.length > 0,
     findOverlaps
   };
 }

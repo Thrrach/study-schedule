@@ -1,6 +1,9 @@
 import { useTimetableApi } from "@/api/timetable.api";
 
 const th = {
+  "history.undo": "ย้อนกลับ",
+  "history.redo": "ทำซ้ำ",
+  "tools.exportIcs": "ส่งออกปฏิทิน (.ics)",
   // App Header
   "app.title": "ระบบจัดตารางเรียน PSU",
   "app.subtitle": "ตารางเรียนของคุณ",
@@ -52,7 +55,7 @@ const th = {
   // Settings Form
   "settings.studentName": "ชื่อผู้เรียน",
   "settings.studentNamePlaceholder": "เช่น นายสมชาย ใจดี",
-  "settings.timeNote": "ตารางบนหน้าจอและไฟล์รูปจะยึดช่วงเวลา {start}-{end} เสมอ",
+  "settings.timeNote": "ตารางและไฟล์ส่งออกใช้ช่วงเวลา {start}-{end}",
   "settings.start": "เริ่ม",
   "settings.end": "สิ้นสุด",
   "settings.interval": "ระยะห่าง (นาที)",
@@ -107,6 +110,9 @@ const th = {
 };
 
 const en: typeof th = {
+  "history.undo": "Undo",
+  "history.redo": "Redo",
+  "tools.exportIcs": "Export Calendar (.ics)",
   "app.title": "PSU Timetable System",
   "app.subtitle": "Your Timetable",
   "app.semester": "Semester",

@@ -10,8 +10,6 @@ import type { ClassItem, WeekDay } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
 import { useTranslation } from "@/lib/i18n";
 
-const TIMETABLE_START = "08:00";
-const TIMETABLE_END = "16:00";
 const HOUR_COLUMN_WIDTH = 150;
 const DAY_COLUMN_WIDTH = 118;
 const DROP_STEP_MINUTES = 10;
@@ -21,6 +19,8 @@ const ROW_VERTICAL_PADDING = 10;
 
 interface TimetableGridProps {
   classes: ClassItem[];
+  startTime: string;
+  endTime: string;
   exportMeta: {
     semester: string;
     studentName: string;
@@ -36,6 +36,8 @@ interface TimetableGridProps {
 
 export function TimetableGrid({
   classes,
+  startTime,
+  endTime,
   exportMeta,
   onDropClass,
   onAddClassAt,
@@ -46,7 +48,10 @@ export function TimetableGrid({
 }: TimetableGridProps) {
   const { language } = useTranslation();
   const safeClasses = Array.isArray(classes) ? classes : [];
-  const { timelineStart, timelineEnd, timelineWidth, hourLabels } = useMemo(() => buildTimeline(), []);
+  const { timelineStart, timelineEnd, timelineWidth, hourLabels } = useMemo(
+    () => buildTimeline(startTime, endTime),
+    [startTime, endTime]
+  );
   const gridWidth = DAY_COLUMN_WIDTH + timelineWidth;
 
   return (
@@ -345,9 +350,9 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function buildTimeline() {
-  const timelineStart = TIMETABLE_START;
-  const timelineEnd = TIMETABLE_END;
+function buildTimeline(startTime: string, endTime: string) {
+  const timelineStart = startTime;
+  const timelineEnd = endTime;
   const timelineWidth = durationToWidth(timelineStart, timelineEnd, HOUR_COLUMN_WIDTH);
 
   return {
