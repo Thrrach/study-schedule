@@ -4,6 +4,7 @@ import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
+  CalendarPlus,
   CalendarDays,
   CheckCircle2,
   FileDown,
@@ -14,9 +15,11 @@ import {
   Plus,
   Search,
   RotateCcw,
+  Redo2,
   SlidersHorizontal,
   Trash2,
   TriangleAlert,
+  Undo2,
   X
 } from "lucide-react";
 import { ClassForm } from "@/components/ClassForm";
@@ -33,6 +36,7 @@ import { useToast } from "@/components/toast";
 import { defaultSettings } from "@/data/sample-data";
 import { useTimetableController } from "@/controllers/timetable.controller";
 import { buildTimeOptions, generateTimeSlots, isValidTime, minutesToTime, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
+import { buildIcs } from "@/lib/calendar";
 import { normalizeClasses, safeDays } from "@/lib/subject-utils";
 import { cn } from "@/lib/utils";
 import type { ClassItem, ImageFormat, TimetableBackup, TimetableSettings } from "@/types/timetable";
@@ -50,9 +54,6 @@ type ViewMode = "grid" | "list";
 type WeekDay = ClassItem["days"][number];
 type SortBy = "day" | "time" | "code" | "name";
 
-const DISPLAY_START = "08:00";
-const DISPLAY_END = "16:00";
-
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -67,7 +68,11 @@ export default function Home() {
     updateSettings,
     resetSample,
     replaceAll,
-    findOverlaps
+    findOverlaps,
+    undo,
+    redo,
+    canUndo,
+    canRedo
   } = useTimetableController();
   const { t, language } = useTranslation();
 
@@ -89,10 +94,7 @@ export default function Home() {
   const [selectedInstructors, setSelectedInstructors] = useState<string[]>([]);
 
   const safeClasses = useMemo(() => normalizeClasses(classes), [classes]);
-  const displayedSettings = useMemo(
-    () => ({ ...settings, startTime: DISPLAY_START, endTime: DISPLAY_END, timeSlots: defaultSettings.timeSlots }),
-    [settings]
-  );
+  const displayedSettings = settings;
   const timeOptions = useMemo(() => generateTimeSlots(displayedSettings), [displayedSettings]);
   const semesterOptions = useMemo(() => buildSemesterOptions(settings.semester), [settings.semester]);
   const overlaps = draft ? findOverlaps(draft, editingClass?.id) : [];
@@ -111,6 +113,32 @@ export default function Home() {
     [safeClasses, searchTerm, sortBy, selectedDays, selectedInstructors]
   );
 
+  useEffect(() => {
+    function handleHistoryShortcut(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const isEditingText = target?.matches("input, textarea, select, [contenteditable='true']");
+      if (isEditingText || !(event.ctrlKey || event.metaKey)) return;
+
+      const key = event.key.toLowerCase();
+      if (key === "z" && event.shiftKey) {
+        if (!canRedo) return;
+        event.preventDefault();
+        redo();
+      } else if (key === "z") {
+        if (!canUndo) return;
+        event.preventDefault();
+        undo();
+      } else if (key === "y") {
+        if (!canRedo) return;
+        event.preventDefault();
+        redo();
+      }
+    }
+
+    window.addEventListener("keydown", handleHistoryShortcut);
+    return () => window.removeEventListener("keydown", handleHistoryShortcut);
+  }, [canRedo, canUndo, redo, undo]);
+
   function openNewForm(defaults: Partial<ClassPayload> = {}) {
     setEditingClass(null);
     setDraft(null);
@@ -120,7 +148,7 @@ export default function Home() {
 
   function openNewFormAt(day: WeekDay, startTime: string) {
     const start = timeToMinutes(startTime);
-    const end = Math.min(start + 50, timeToMinutes(DISPLAY_END));
+    const end = Math.min(start + 50, timeToMinutes(settings.endTime));
     openNewForm({
       days: [day],
       startTime,
@@ -186,6 +214,17 @@ export default function Home() {
     URL.revokeObjectURL(url);
   }
 
+  function exportIcs() {
+    const ics = buildIcs(safeClasses, settings.semester ? `PSU Timetable - ${settings.semester}` : "PSU Timetable");
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "psu-timetable.ics";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function importJson(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -242,6 +281,14 @@ export default function Home() {
               </div>
 
               <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs(), language))} />
+              <div className="inline-flex rounded-md border bg-slate-50 p-1" aria-label="history">
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={undo} disabled={!canUndo} aria-label={t("history.undo")} title={t("history.undo")}>
+                  <Undo2 className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={redo} disabled={!canRedo} aria-label={t("history.redo")} title={t("history.redo")}>
+                  <Redo2 className="h-4 w-4" />
+                </Button>
+              </div>
               <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setToolsOpen(true)}>
                 <SlidersHorizontal className="h-4 w-4" />
                 {t("app.tools")}
@@ -422,7 +469,7 @@ export default function Home() {
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 no-print">
           <Metric label={t("metrics.courses")} value={safeClasses.length.toString()} />
           <Metric label={t("metrics.overlaps")} value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
-          <Metric label={t("metrics.displayTime")} value={`${DISPLAY_START}-${DISPLAY_END}`} />
+          <Metric label={t("metrics.displayTime")} value={`${settings.startTime}-${settings.endTime}`} />
           <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
             <div className="min-w-0">
@@ -436,6 +483,8 @@ export default function Home() {
           <div className={cn(viewMode === "grid" ? "absolute left-[-10000px] top-0 md:static" : "absolute left-[-10000px] top-0 w-max")}>
             <TimetableGrid
               classes={filteredClasses}
+              startTime={settings.startTime}
+              endTime={settings.endTime}
               exportMeta={{ semester: settings.semester ?? "", studentName: settings.studentName ?? "", exportedAt: exportDate }}
               onDropClass={handleMoveClass}
               onAddClassAt={openNewFormAt}
@@ -462,8 +511,8 @@ export default function Home() {
             defaultValue={newClassDefaults}
             overlaps={overlaps}
             timeOptions={timeOptions}
-            timetableStart={DISPLAY_START}
-            timetableEnd={DISPLAY_END}
+            timetableStart={settings.startTime}
+            timetableEnd={settings.endTime}
             onPreview={setDraft}
             onCancel={() => setFormOpen(false)}
             onSubmit={(payload) => {
@@ -516,6 +565,10 @@ export default function Home() {
                   </SelectContent>
                 </Select>
                 <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs(), language))} />
+                <Button variant="outline" onClick={exportIcs}>
+                  <CalendarPlus className="h-4 w-4" />
+                  {t("tools.exportIcs")}
+                </Button>
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" onClick={exportJson}>
                     <FileDown className="h-4 w-4" />
@@ -607,7 +660,7 @@ function SettingsForm({
   onChange: (settings: TimetableSettings) => void;
   semesterOptions: string[];
 }) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const baseTimeOptions = useMemo(() => buildTimeOptions(10), []);
   const slots = useMemo(
     () => generateTimeSlots(settings),
@@ -678,7 +731,9 @@ function SettingsForm({
       </div>
 
       <div className="rounded-md border border-sky-100 bg-sky-50 p-3 text-sm text-sky-900">
-        {t("settings.timeNote", { start: DISPLAY_START, end: DISPLAY_END })}
+        {language === "en"
+          ? `The timetable and exported files use ${settings.startTime}-${settings.endTime}`
+          : `ตารางและไฟล์ส่งออกใช้ช่วงเวลา ${settings.startTime}-${settings.endTime}`}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
