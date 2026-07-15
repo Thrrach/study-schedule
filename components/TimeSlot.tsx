@@ -16,6 +16,7 @@ interface TimeSlotProps {
   onDelete: (id: string) => void;
 }
 
+/** แสดงช่องเวลาของวันหนึ่งในตารางแบบ grid และรองรับการวางรายวิชา */
 export function TimeSlot({
   day,
   time,
@@ -61,6 +62,7 @@ export function TimeSlot({
   );
 }
 
+/** อ่านข้อมูลรายวิชาจาก drag-and-drop โดยรองรับ JSON และข้อความธรรมดา */
 function readDragPayload(dataTransfer: DataTransfer): { id: string; sourceDay?: WeekDay } {
   const json = dataTransfer.getData("application/json");
   if (json) {

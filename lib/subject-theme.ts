@@ -54,6 +54,7 @@ const themes: Record<SubjectCategory, SubjectTheme> = {
   }
 };
 
+/** เลือกชุดสีและหมวดหมู่ที่เหมาะกับข้อมูลรายวิชา */
 export function getSubjectTheme(item: Pick<ClassItem, "courseCode" | "courseName" | "room" | "note">): SubjectTheme {
   const text = `${item.courseCode} ${item.courseName} ${item.room} ${item.note ?? ""}`.toLowerCase();
   const code = item.courseCode.toLowerCase();

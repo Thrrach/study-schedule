@@ -19,6 +19,7 @@ interface ClassCardProps {
   onDelete: (id: string) => void;
 }
 
+/** แสดงข้อมูลรายวิชาเป็นการ์ดที่เปิดรายละเอียด แก้ไข ทำสำเนา ลบ และลากย้ายได้ */
 export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate, onDelete }: ClassCardProps) {
   const { t, language } = useTranslation();
   const theme = getSubjectTheme(item);
@@ -30,10 +31,12 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
     item.instructor ? { icon: <UserRound className="h-3.5 w-3.5" />, value: item.instructor } : null
   ].filter(Boolean) as Array<{ icon: React.ReactNode; value: string }>;
 
+  /** เปิดหน้าต่างรายละเอียดของรายวิชานี้ */
   function openDetail() {
     onView(item);
   }
 
+  /** หยุดการส่งต่อ event ของปุ่มการกระทำไปยังตัวการ์ด */
   function stopAction(event: React.MouseEvent) {
     event.stopPropagation();
   }

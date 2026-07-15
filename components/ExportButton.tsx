@@ -16,11 +16,13 @@ interface ExportButtonProps {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost";
 }
 
+/** ส่งออกองค์ประกอบตารางที่ระบุเป็นภาพ PNG หรือ JPEG */
 export function ExportButton({ targetId, format, onBeforeExport, className, variant = "secondary" }: ExportButtonProps) {
   const { t, language } = useTranslation();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
+  /** จับภาพ DOM ของตารางหลัง layout เสร็จ แล้วเริ่มดาวน์โหลดไฟล์ */
   async function exportImage() {
     const node = document.getElementById(targetId);
     if (!node || exporting) return;
@@ -94,6 +96,7 @@ export function ExportButton({ targetId, format, onBeforeExport, className, vari
   );
 }
 
+/** รอให้เบราว์เซอร์วาดหน้าจอครบสองรอบก่อนจับภาพ */
 function nextPaint() {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));

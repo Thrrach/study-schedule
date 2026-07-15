@@ -25,17 +25,20 @@ export type RawClassItem = Partial<ClassItem> & {
   days?: unknown;
 };
 
+/** แปลงชื่อวันหรือคำย่อที่รองรับเป็นชนิด Day มาตรฐาน */
 export function normalizeDay(value: unknown): Day | null {
   if (typeof value !== "string") return null;
   return dayAliases[value] ?? null;
 }
 
+/** คืนเฉพาะวันเรียนที่ถูกต้องและไม่ซ้ำจากข้อมูลนำเข้า */
 export function safeDays(value: unknown): Day[] {
   if (!Array.isArray(value)) return [];
   const days = value.map(normalizeDay).filter((day): day is Day => Boolean(day));
   return Array.from(new Set(days));
 }
 
+/** แปลงข้อมูลรายวิชาที่อาจไม่สมบูรณ์ให้เป็น ClassItem ที่ปลอดภัยต่อการใช้งาน */
 export function normalizeClass(raw: unknown): ClassItem {
   const source = isRecord(raw) ? raw : {};
   const timestamp = Date.now();
@@ -61,22 +64,26 @@ export function normalizeClass(raw: unknown): ClassItem {
   };
 }
 
+/** แปลงและรวมรายการรายวิชา โดยตัดข้อมูลซ้ำที่มีรหัสเดียวกัน */
 export function normalizeClasses(rawClasses: unknown): ClassItem[] {
   if (!Array.isArray(rawClasses)) return [];
   return dedupeClasses(rawClasses.map((item) => normalizeClass(item)));
 }
 
+/** ตรวจสอบว่ารายวิชาสองรายการมีวันเรียนร่วมกันอย่างน้อยหนึ่งวันหรือไม่ */
 export function subjectsShareDay(first: Pick<ClassItem, "days">, second: Pick<ClassItem, "days">) {
   const firstDays = safeDays(first.days);
   const secondDays = safeDays(second.days);
   return firstDays.some((day) => secondDays.includes(day));
 }
 
+/** เพิ่มวันเรียนให้รายการเดิมเมื่อวันนั้นยังไม่มีอยู่ */
 export function withAddedDay(days: unknown, day: WeekDay) {
   const currentDays = safeDays(days);
   return currentDays.includes(day) ? currentDays : [...currentDays, day];
 }
 
+/** รวมรายวิชาที่มี id เดียวกัน พร้อมรักษาวันเรียนและเวลาแก้ไขล่าสุด */
 function dedupeClasses(classes: ClassItem[]) {
   const byId = new Map<string, ClassItem>();
 
@@ -103,31 +110,37 @@ function dedupeClasses(classes: ClassItem[]) {
     .sort((a, b) => a.createdAt - b.createdAt);
 }
 
+/** ตรวจสอบว่าค่าเป็น object ที่ใช้เข้าถึงฟิลด์ได้หรือไม่ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
 }
 
+/** แปลงค่าใด ๆ เป็นข้อความ โดยใช้ค่าเริ่มต้นเมื่อไม่มีค่า */
 function stringValue(value: unknown, fallback = "") {
   if (typeof value === "string") return value;
   if (value === null || value === undefined) return fallback;
   return String(value);
 }
 
+/** แปลงค่าเป็น Unix timestamp ที่ใช้ได้ หรือคืนค่าเริ่มต้น */
 function timestampValue(value: unknown, fallback: number) {
   const timestamp = typeof value === "number" ? value : Number(value);
   return Number.isFinite(timestamp) ? timestamp : fallback;
 }
 
+/** คืนค่าเวลาเมื่ออยู่ในรูปแบบที่ถูกต้อง มิฉะนั้นคืนค่าเริ่มต้น */
 function normalizeTime(value: unknown, fallback: string) {
   return typeof value === "string" && isValidTime(value) ? value : fallback;
 }
 
+/** รับประกันว่าเวลาสิ้นสุดอยู่หลังเวลาเริ่ม พร้อมกำหนดคาบเริ่มต้น 50 นาที */
 function normalizeEndTime(value: unknown, startTime: string) {
   const fallbackEnd = minutesToTime(Math.min(23 * 60 + 59, timeToMinutes(startTime) + 50));
   const endTime = normalizeTime(value, fallbackEnd);
   return timeToMinutes(endTime) > timeToMinutes(startTime) ? endTime : fallbackEnd;
 }
 
+/** ตรวจสอบและคืนค่าสี hexadecimal 6 หลัก หรือใช้สีฟ้าเริ่มต้น */
 function normalizeColor(value: unknown) {
   return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#38bdf8";
 }

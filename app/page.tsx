@@ -54,6 +54,7 @@ type ViewMode = "grid" | "list";
 type WeekDay = ClassItem["days"][number];
 type SortBy = "day" | "time" | "code" | "name";
 
+/** หน้าหลักสำหรับดู จัดการ กรอง และส่งออกตารางเรียน */
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -114,6 +115,7 @@ export default function Home() {
   );
 
   useEffect(() => {
+    /** รองรับคีย์ลัด undo/redo โดยไม่รบกวนการพิมพ์ในช่องข้อมูล */
     function handleHistoryShortcut(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
       const isEditingText = target?.matches("input, textarea, select, [contenteditable='true']");
@@ -139,6 +141,7 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleHistoryShortcut);
   }, [canRedo, canUndo, redo, undo]);
 
+  /** เปิดฟอร์มเพิ่มรายวิชาใหม่พร้อมค่าเริ่มต้นที่ระบุ */
   function openNewForm(defaults: Partial<ClassPayload> = {}) {
     setEditingClass(null);
     setDraft(null);
@@ -146,6 +149,7 @@ export default function Home() {
     setFormOpen(true);
   }
 
+  /** เปิดฟอร์มเพิ่มรายวิชาจากช่องวันและเวลาที่ผู้ใช้คลิก */
   function openNewFormAt(day: WeekDay, startTime: string) {
     const start = timeToMinutes(startTime);
     const end = Math.min(start + 50, timeToMinutes(settings.endTime));
@@ -156,6 +160,7 @@ export default function Home() {
     });
   }
 
+  /** เปิดฟอร์มแก้ไขและตั้งข้อมูลรายวิชาปัจจุบันเป็น draft */
   function openEditForm(item: ClassItem) {
     setSelectedClass(null);
     setEditingClass(item);
@@ -164,10 +169,12 @@ export default function Home() {
     setFormOpen(true);
   }
 
+  /** สร้างข้อความชื่อรายวิชาสำหรับใช้ใน toast และข้อความแจ้งผล */
   function formatClassLabel(item: Pick<ClassItem, "courseCode" | "courseName">) {
     return `${item.courseCode} ${item.courseName}`.trim();
   }
 
+  /** แสดง toast ยืนยันหลังเพิ่มหรือบันทึกการแก้ไขรายวิชาสำเร็จ */
   function handleSaveSuccess(action: "create" | "update", payload: ClassPayload) {
     toast({
       variant: "success",
@@ -176,6 +183,7 @@ export default function Home() {
     });
   }
 
+  /** ทำสำเนารายวิชาและแจ้งผลเมื่อพบรายการต้นฉบับ */
   function handleDuplicateClass(id: string) {
     const source = safeClasses.find((item) => item.id === id);
     duplicateClass(id);
@@ -183,6 +191,7 @@ export default function Home() {
     toast({ variant: "success", title: "สร้างสำเนารายวิชาแล้ว", description: formatClassLabel(source) });
   }
 
+  /** ลบรายวิชาที่ผู้ใช้ยืนยันจาก dialog และแสดงข้อความแจ้งผล */
   function handleDeleteClass() {
     if (!classToDelete) return;
     const removed = classToDelete;
@@ -191,6 +200,7 @@ export default function Home() {
     toast({ variant: "success", title: "ลบรายวิชาแล้ว", description: formatClassLabel(removed) });
   }
 
+  /** ย้ายรายวิชาจากการลากวาง แล้วแจ้งวันและเวลาใหม่ */
   function handleMoveClass(id: string, day: WeekDay, startTime: string, sourceDay?: WeekDay) {
     const source = safeClasses.find((item) => item.id === id);
     moveClass(id, day, startTime, sourceDay);
@@ -198,6 +208,7 @@ export default function Home() {
     toast({ variant: "info", title: "ย้ายรายวิชาแล้ว", description: `${formatClassLabel(source)} • ${day} ${startTime}` });
   }
 
+  /** ส่งออกรายวิชาและการตั้งค่าปัจจุบันเป็นไฟล์สำรอง JSON */
   function exportJson() {
     const backup: TimetableBackup = {
       version: 1,
@@ -214,6 +225,7 @@ export default function Home() {
     URL.revokeObjectURL(url);
   }
 
+  /** ส่งออกตารางเรียนเป็นไฟล์ปฏิทิน iCalendar (.ics) */
   function exportIcs() {
     const ics = buildIcs(safeClasses, settings.semester ? `PSU Timetable - ${settings.semester}` : "PSU Timetable");
     const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
@@ -225,6 +237,7 @@ export default function Home() {
     URL.revokeObjectURL(url);
   }
 
+  /** อ่านไฟล์ JSON ที่เลือก ตรวจสอบข้อมูล แล้วนำเข้ามาแทน state ปัจจุบัน */
   async function importJson(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -651,6 +664,7 @@ export default function Home() {
   );
 }
 
+/** ฟอร์มปรับข้อมูลผู้เรียน ช่วงเวลา และช่องเวลาของตาราง */
 function SettingsForm({
   settings,
   onChange,
@@ -673,6 +687,7 @@ function SettingsForm({
     setNewSlot(slots[0] ?? "08:00");
   }, [slots]);
 
+  /** ตรวจสอบ เรียง และบันทึกช่องเวลาที่ผู้ใช้กำหนดเอง */
   function setSlots(timeSlots: string[]) {
     const normalized = normalizeTimeSlots(timeSlots);
     const chronologicalSlots = [...normalized].sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
@@ -684,10 +699,12 @@ function SettingsForm({
     });
   }
 
+  /** เปลี่ยนขอบเขตหรือช่วงเวลาแบบสร้างอัตโนมัติ พร้อมล้างช่องเวลาที่กำหนดเอง */
   function updateGeneratedRange(updates: Partial<Pick<TimetableSettings, "startTime" | "endTime" | "intervalMinutes">>) {
     onChange({ ...settings, ...updates, timeSlots: [] });
   }
 
+  /** แก้ไขช่องเวลาหนึ่งรายการเมื่อค่าเวลาอยู่ในรูปแบบที่ถูกต้อง */
   function updateSlot(index: number, value: string) {
     if (!isValidTime(value)) return;
     const next = [...slots];
@@ -695,6 +712,7 @@ function SettingsForm({
     setSlots(next);
   }
 
+  /** สลับตำแหน่งช่องเวลากับรายการก่อนหน้าหรือถัดไป */
   function moveSlot(index: number, direction: -1 | 1) {
     const nextIndex = index + direction;
     if (nextIndex < 0 || nextIndex >= slots.length) return;
@@ -815,6 +833,7 @@ function SettingsForm({
   );
 }
 
+/** จัดโครงป้ายกำกับ ช่องเนื้อหา และข้อความผิดพลาดในฟอร์มตั้งค่า */
 function Field({
   label,
   error,
@@ -835,6 +854,7 @@ function Field({
   );
 }
 
+/** แสดงตัวเลขสรุปหนึ่งรายการพร้อมโทนสีตามสถานะ */
 function Metric({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "success" | "warning" }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
@@ -846,6 +866,7 @@ function Metric({ label, value, tone = "default" }: { label: string; value: stri
   );
 }
 
+/** ตัดฟิลด์ระบบออกจาก ClassItem เพื่อใช้เป็นข้อมูลของฟอร์ม */
 function toPayload(item: ClassItem): ClassPayload {
   return {
     courseCode: item.courseCode,
@@ -861,6 +882,7 @@ function toPayload(item: ClassItem): ClassPayload {
   };
 }
 
+/** นับจำนวนรายวิชาที่ทับซ้อนกับรายการที่ปรากฏก่อนหน้า */
 function countOverlaps(classes: ClassItem[]) {
   return classes.reduce((count, item, index) => {
     const hasEarlierOverlap = classes.slice(0, index).some((other) => subjectsOverlap(other, item));
@@ -868,6 +890,7 @@ function countOverlaps(classes: ClassItem[]) {
   }, 0);
 }
 
+/** ตรวจสอบว่ารายวิชาสองรายการมีทั้งวันและช่วงเวลาที่ทับซ้อนกัน */
 function subjectsOverlap(first: Pick<ClassItem, "days" | "startTime" | "endTime">, second: Pick<ClassItem, "days" | "startTime" | "endTime">) {
   const firstDays = safeDays(first.days);
   const secondDays = safeDays(second.days);
@@ -875,6 +898,7 @@ function subjectsOverlap(first: Pick<ClassItem, "days" | "startTime" | "endTime"
   return sharesDay && timeToMinutes(first.startTime) < timeToMinutes(second.endTime) && timeToMinutes(second.startTime) < timeToMinutes(first.endTime);
 }
 
+/** ค้นหา กรอง และเรียงรายวิชาตามเงื่อนไขของหน้าหลัก */
 function sortAndFilterClasses(
   classes: ClassItem[],
   filters: {
@@ -924,6 +948,7 @@ function sortAndFilterClasses(
   return sorted;
 }
 
+/** สร้างรายการภาคเรียนรอบปีปัจจุบัน และคงค่าที่ผู้ใช้บันทึกไว้ */
 function buildSemesterOptions(current?: string) {
   const buddhistYear = new Date().getFullYear() + 543;
   const options = [`1/${buddhistYear}`, `2/${buddhistYear}`, `ฤดูร้อน/${buddhistYear}`, `1/${buddhistYear + 1}`, `2/${buddhistYear + 1}`];
@@ -935,6 +960,7 @@ type RawTimetableImport = Partial<TimetableBackup> & {
   classes?: unknown;
 };
 
+/** แปลงไฟล์นำเข้ารูปแบบปัจจุบันหรือ legacy ให้เป็น TimetableBackup มาตรฐาน */
 function normalizeImport(value: RawTimetableImport): TimetableBackup {
   if (!value || typeof value !== "object") throw new Error("Invalid backup");
   const rawClasses = Array.isArray(value.classes) ? value.classes : Array.isArray(value.subjects) ? value.subjects : null;
@@ -955,6 +981,7 @@ function normalizeImport(value: RawTimetableImport): TimetableBackup {
   };
 }
 
+/** จัดรูปแบบวันที่ส่งออกตามภาษาไทยหรืออังกฤษ */
 function formatExportDate(date: dayjs.Dayjs, lang: "th" | "en") {
   if (lang === "en") {
     return date.locale("en").format("MMMM D, YYYY HH:mm");
@@ -962,6 +989,7 @@ function formatExportDate(date: dayjs.Dayjs, lang: "th" | "en") {
   return date.locale("th").format("D MMMM BBBB เวลา HH:mm น.");
 }
 
+/** คืนลำดับวันทำการเพื่อใช้เรียงรายวิชาตามตาราง */
 function weekDayIndex(day: string): number {
   const dayMap: Record<string, number> = {
     Monday: 0,

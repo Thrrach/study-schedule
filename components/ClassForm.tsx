@@ -41,6 +41,7 @@ interface ClassFormProps {
   onCancel: () => void;
 }
 
+/** ฟอร์มเพิ่มหรือแก้ไขรายวิชา พร้อมตรวจสอบข้อมูลและแสดงตัวอย่างแบบทันที */
 export function ClassForm({
   initialValue,
   defaultValue,
@@ -80,12 +81,14 @@ export function ClassForm({
   };
   const hasErrors = Object.values(errors).some(Boolean);
 
+  /** อัปเดตฟิลด์ในฟอร์มและแจ้งข้อมูลล่าสุดเพื่อแสดงตัวอย่าง */
   function update<K extends keyof ClassPayload>(key: K, nextValue: ClassPayload[K]) {
     const next = { ...value, [key]: nextValue };
     setValue(next);
     onPreview(next, initialValue?.id);
   }
 
+  /** เปลี่ยนเวลาเริ่มและเลื่อนเวลาสิ้นสุดเมื่อจำเป็นเพื่อให้คาบยังถูกต้อง */
   function updateStartTime(startTime: string) {
     const currentEnd = timeToMinutes(value.endTime);
     const start = timeToMinutes(startTime);
@@ -98,6 +101,7 @@ export function ClassForm({
     onPreview(next, initialValue?.id);
   }
 
+  /** ตั้งเวลาสิ้นสุดตามระยะเวลาคาบที่ผู้ใช้เลือก */
   function setDuration(minutes: number) {
     const end = Math.min(timeToMinutes(value.startTime) + minutes, timeToMinutes(timetableEnd));
     update("endTime", minutesToTime(end));
@@ -231,6 +235,7 @@ export function ClassForm({
   );
 }
 
+/** จัดโครงป้ายกำกับ ช่องกรอก และข้อความแจ้งข้อผิดพลาดของฟอร์ม */
 function Field({
   label,
   error,

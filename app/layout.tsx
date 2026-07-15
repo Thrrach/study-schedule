@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   description: "วางแผน จัดเวลา และส่งออกตารางเรียนมหาวิทยาลัยได้สะดวกยิ่งขึ้น"
 };
 
+/** ครอบทุกหน้าด้วยโครง HTML พื้นฐานและ provider สำหรับการแจ้งเตือน */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th">
