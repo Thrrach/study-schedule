@@ -14,6 +14,7 @@ interface SubjectDetailDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/** แสดงรายละเอียดทั้งหมดของรายวิชาที่เลือกใน dialog */
 export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailDialogProps) {
   const { t, language } = useTranslation();
   const theme = item ? getSubjectTheme(item) : null;
@@ -89,6 +90,7 @@ export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailD
   );
 }
 
+/** แสดงข้อมูลรายละเอียดหนึ่งรายการพร้อมไอคอนและป้ายกำกับ */
 function Detail({
   icon,
   label,

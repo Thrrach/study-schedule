@@ -25,10 +25,12 @@ type ToastContextValue = {
 const ToastContext = React.createContext<ToastContextValue | null>(null);
 const DEFAULT_DURATION_MS = 3200;
 
+/** จัดการรายการ toast และ timer สำหรับซ่อนการแจ้งเตือนอัตโนมัติ */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ToastItem[]>([]);
   const timersRef = React.useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
+  /** ปิด toast ที่ระบุและเคลียร์ timer ที่เกี่ยวข้อง */
   const dismiss = React.useCallback((id: string) => {
     const timer = timersRef.current.get(id);
     if (timer) {
@@ -38,6 +40,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
+  /** เพิ่ม toast ใหม่และตั้งเวลาปิดตามระยะเวลาที่กำหนด */
   const toast = React.useCallback(
     ({ durationMs = DEFAULT_DURATION_MS, ...nextToast }: ToastInput) => {
       const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -68,6 +71,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** คืนคำสั่งสร้างและปิด toast โดยต้องเรียกภายใน ToastProvider */
 export function useToast() {
   const context = React.useContext(ToastContext);
   if (!context) {
@@ -76,6 +80,7 @@ export function useToast() {
   return context;
 }
 
+/** แสดง toast หนึ่งรายการพร้อมสีและไอคอนตามประเภทการแจ้งเตือน */
 function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => void }) {
   const variantStyles = {
     success: "border-emerald-200 bg-emerald-50 text-emerald-950",

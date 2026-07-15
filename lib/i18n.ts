@@ -212,10 +212,12 @@ const dictionaries = { th, en };
 
 export type TranslationKey = keyof typeof th;
 
+/** คืนฟังก์ชันแปลข้อความตามภาษาที่ผู้ใช้ตั้งค่า พร้อมแทนค่าพารามิเตอร์ในข้อความ */
 export function useTranslation() {
   const language = useTimetableApi((state) => state.settings.language) || "th";
   const dict = dictionaries[language];
 
+  /** แปล key และแทนที่ placeholder เช่น {count} ด้วยค่าที่ส่งมา */
   const t = (key: TranslationKey, params?: Record<string, string | number>) => {
     let str = dict[key] || key;
     if (params) {

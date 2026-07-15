@@ -34,6 +34,7 @@ interface TimetableGridProps {
   onDelete: (id: string) => void;
 }
 
+/** แสดงตารางเรียนแบบ timeline พร้อมการลากย้ายและคลิกเพิ่มรายวิชา */
 export function TimetableGrid({
   classes,
   startTime,
@@ -90,6 +91,7 @@ export function TimetableGrid({
   );
 }
 
+/** แสดงหัวกระดาษเฉพาะในภาพที่ส่งออก พร้อมข้อมูลภาคเรียนและผู้เรียน */
 function ExportHeader({
   meta,
   width
@@ -128,6 +130,7 @@ function ExportHeader({
   );
 }
 
+/** แสดงป้ายกำกับเวลาเหนือแนว timeline */
 function TimelineHeader({
   hourLabels,
   timelineStart,
@@ -165,6 +168,7 @@ function TimelineHeader({
   );
 }
 
+/** แสดงแถวของวันหนึ่ง รวมรายการวิชาและพื้นที่วางรายวิชา */
 function DayRow({
   day,
   dayLabel,
@@ -256,6 +260,7 @@ function DayRow({
   );
 }
 
+/** สร้างพื้นหลัง timeline ที่แบ่งช่วงเวลาและแปลงตำแหน่ง pointer เป็นเวลา */
 function TimelineBackground({
   day,
   timelineStart,
@@ -277,6 +282,7 @@ function TimelineBackground({
     units.push(minutesToTime(minute));
   }
 
+  /** แปลงพิกัดแนวนอนของการคลิกหรือลากวางเป็นเวลาที่ snap ตามช่วงที่กำหนด */
   function eventToTime(event: React.MouseEvent<HTMLDivElement> | React.DragEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     const rawMinutes = start + ((event.clientX - rect.left) / HOUR_COLUMN_WIDTH) * 60;
@@ -323,6 +329,7 @@ function TimelineBackground({
   );
 }
 
+/** แยกรายวิชาที่ทับซ้อนกันลงคนละ lane เพื่อไม่ให้การ์ดซ้อนทับกัน */
 function assignLanes(classes: ClassItem[]) {
   const lanes: ClassItem[][] = [];
   const sorted = [...(Array.isArray(classes) ? classes : [])].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
@@ -346,10 +353,12 @@ function assignLanes(classes: ClassItem[]) {
   return lanes;
 }
 
+/** จำกัดตัวเลขให้อยู่ระหว่างขอบเขตต่ำสุดและสูงสุด */
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+/** สร้างข้อมูลมิติและป้ายกำกับสำหรับ timeline ของตาราง */
 function buildTimeline(startTime: string, endTime: string) {
   const timelineStart = startTime;
   const timelineEnd = endTime;
@@ -363,6 +372,7 @@ function buildTimeline(startTime: string, endTime: string) {
   };
 }
 
+/** อ่านข้อมูลรายวิชาจาก drag-and-drop โดยรองรับ JSON และข้อความธรรมดา */
 function readDragPayload(dataTransfer: DataTransfer): { id: string; sourceDay?: WeekDay } {
   const json = dataTransfer.getData("application/json");
   if (json) {
