@@ -16,6 +16,7 @@ const dayOffsets: Record<Day, number> = {
   Friday: 4
 };
 
+/** สร้างเนื้อหาไฟล์ iCalendar (.ics) สำหรับนำตารางเรียนเข้าแอปปฏิทิน */
 export function buildIcs(classes: ClassItem[], calendarName = "PSU Timetable") {
   const monday = getMonday(new Date());
   const events = classes
@@ -45,6 +46,7 @@ export function buildIcs(classes: ClassItem[], calendarName = "PSU Timetable") {
   ].filter(Boolean).join("\r\n");
 }
 
+/** สร้าง VEVENT ที่เกิดซ้ำทุกสัปดาห์จากข้อมูลรายวิชาหนึ่งรายการ */
 function buildEvent(item: ClassItem, monday: Date) {
   const firstDay = item.days[0];
   const occurrence = new Date(monday);
@@ -73,6 +75,7 @@ function buildEvent(item: ClassItem, monday: Date) {
   ].join("\r\n");
 }
 
+/** หาวันจันทร์ของสัปดาห์เดียวกับวันที่ระบุ */
 function getMonday(date: Date) {
   const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const day = monday.getDay();
@@ -80,6 +83,7 @@ function getMonday(date: Date) {
   return monday;
 }
 
+/** รวมวันที่และเวลาในเขตเวลา local ให้อยู่ในรูปแบบ iCalendar */
 function formatLocalDateTime(date: Date, time: string) {
   const datePart = [date.getFullYear(), date.getMonth() + 1, date.getDate()]
     .map((value) => value.toString().padStart(2, "0"))
@@ -87,10 +91,12 @@ function formatLocalDateTime(date: Date, time: string) {
   return `${datePart}T${time.replace(":", "")}00`;
 }
 
+/** แปลงวันที่เป็น timestamp UTC ตามรูปแบบ iCalendar */
 function formatUtcDateTime(date: Date) {
   return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 }
 
+/** Escape อักขระพิเศษเพื่อให้ข้อความปลอดภัยต่อรูปแบบ iCalendar */
 function escapeText(value: string) {
   return value
     .replace(/\\/g, "\\\\")

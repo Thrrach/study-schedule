@@ -3,12 +3,14 @@ import { normalizeClass, safeDays, subjectsShareDay } from "@/lib/subject-utils"
 import { uid } from "@/lib/utils";
 import type { ClassItem, TimetableSettings, WeekDay } from "@/types/timetable";
 
+/** คำนวณระยะห่างระหว่างเวลาสองค่าเป็นนาที */
 export function timeDiff(start: string, end: string) {
   const [startHour, startMinute] = start.split(":").map(Number);
   const [endHour, endMinute] = end.split(":").map(Number);
   return endHour * 60 + endMinute - (startHour * 60 + startMinute);
 }
 
+/** เพิ่มจำนวนนาทีให้เวลา HH:mm แล้วคืนผลลัพธ์ในรูปแบบเดิม */
 export function addMinutes(time: string, minutes: number) {
   const [hour, minute] = time.split(":").map(Number);
   const total = hour * 60 + minute + minutes;
@@ -17,6 +19,7 @@ export function addMinutes(time: string, minutes: number) {
     .padStart(2, "0")}`;
 }
 
+/** ย้ายวันเรียนเดิมไปยังวันเป้าหมาย หรือเพิ่มวันเป้าหมายให้รายวิชา */
 export function moveDay(days: unknown, targetDay: WeekDay, sourceDay?: WeekDay) {
   const currentDays = safeDays(days);
   if (!currentDays.length) return [targetDay];
@@ -31,20 +34,24 @@ export function moveDay(days: unknown, targetDay: WeekDay, sourceDay?: WeekDay) 
   return Array.from(new Set(movedDays));
 }
 
+/** แปลงค่าใด ๆ เป็นข้อความ โดยคืนค่าเริ่มต้นเมื่อไม่มีค่า */
 function stringValue(value: unknown, fallback = "") {
   if (typeof value === "string") return value;
   if (value === null || value === undefined) return fallback;
   return String(value);
 }
 
+/** ตรวจสอบว่าค่าเป็น object ที่เข้าถึงฟิลด์ได้ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
 }
 
+/** คืนค่าเวลาเมื่อมีรูปแบบถูกต้อง มิฉะนั้นใช้ค่าเริ่มต้น */
 function normalizeTime(value: unknown, fallback: string) {
   return typeof value === "string" && isValidTime(value) ? value : fallback;
 }
 
+/** ทำความสะอาดการตั้งค่าตารางและใช้ค่าตั้งต้นเมื่อข้อมูลไม่ถูกต้อง */
 export function normalizeSettings(rawSettings: unknown, fallback: TimetableSettings): TimetableSettings {
   const raw = isRecord(rawSettings) ? rawSettings : {};
   const startTime = normalizeTime(raw.startTime, fallback.startTime);
@@ -79,16 +86,18 @@ export function normalizeSettings(rawSettings: unknown, fallback: TimetableSetti
 }
 
 export const timetableService = {
+  /** สร้างรายวิชาใหม่พร้อมรหัสและเวลาสร้างที่ไม่ซ้ำกัน */
   createClass(item: Omit<ClassItem, "id" | "createdAt" | "updatedAt">): ClassItem {
     const timestamp = Date.now();
     return {
       ...normalizeClass(item),
-      id: uid(), // Not actually setting ID here if it doesn't need to be unique? Wait, addClass in store creates uid implicitly inside normalizeClass? Actually, normalizeClass gives an ID if one isn't present. But let's generate it here just to be explicit.
+      id: uid(),
       createdAt: timestamp,
       updatedAt: timestamp
     };
   },
 
+  /** อัปเดตรายวิชาโดยคงรหัสและเวลาเริ่มสร้างเดิมไว้ */
   updateClass(existingItem: ClassItem, updates: Omit<ClassItem, "id" | "createdAt" | "updatedAt">): ClassItem {
     return {
       ...normalizeClass({ ...existingItem, ...updates }),
@@ -97,6 +106,7 @@ export const timetableService = {
     };
   },
 
+  /** ทำสำเนารายวิชาและกำหนดรหัสกับเวลาบันทึกใหม่ */
   duplicateClass(source: ClassItem): ClassItem {
     const timestamp = Date.now();
     return {
@@ -108,6 +118,7 @@ export const timetableService = {
     };
   },
 
+  /** ย้ายรายวิชาไปยังวันและเวลาใหม่โดยคงระยะเวลาของคาบเดิม */
   moveClass(item: ClassItem, targetDay: WeekDay, targetStartTime: string, sourceDay?: WeekDay): ClassItem {
     const duration = Math.max(10, timeDiff(item.startTime, item.endTime));
     return {
@@ -119,6 +130,7 @@ export const timetableService = {
     };
   },
 
+  /** ค้นหารายวิชาที่วันและเวลาทับซ้อนกับข้อมูลที่กำลังตรวจสอบ */
   findOverlaps(
     classes: ClassItem[],
     candidate: Omit<ClassItem, "id" | "createdAt" | "updatedAt">,

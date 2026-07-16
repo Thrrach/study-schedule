@@ -23,6 +23,7 @@ interface ColorPickerProps {
   onChange: (value: string) => void;
 }
 
+/** ให้ผู้ใช้เลือกสีรายวิชาจากสีสำเร็จรูปหรือ color input */
 export function ColorPicker({ value, onChange }: ColorPickerProps) {
   const labelId = useId();
   const inputId = useId();
@@ -64,6 +65,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
   );
 }
 
+/** ตรวจสอบว่าสีเป็นรหัส hexadecimal 6 หลัก */
 function isValidHexColor(value: string) {
   return /^#[0-9a-fA-F]{6}$/.test(value);
 }

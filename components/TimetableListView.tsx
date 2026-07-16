@@ -13,6 +13,7 @@ interface TimetableListViewProps {
   onView: (item: ClassItem) => void;
 }
 
+/** แสดงตารางเรียนแบบรายการ โดยจัดกลุ่มและเรียงรายวิชาตามวัน */
 export function TimetableListView({ classes, onView }: TimetableListViewProps) {
   const { t, language } = useTranslation();
   const safeClasses = Array.isArray(classes) ? classes : [];
