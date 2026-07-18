@@ -14,10 +14,17 @@ export function useTimetableController() {
     hydrated,
     past,
     future,
+    plans,
+    activePlanId,
     setHydrated,
     setClasses,
     setSettings,
     replaceAll: replaceStoredState,
+    replacePlans,
+    createPlan,
+    renamePlan,
+    switchPlan,
+    deletePlan,
     undo,
     redo
   } = useTimetableApi();
@@ -26,6 +33,11 @@ export function useTimetableController() {
   const addClass = (item: Omit<ClassItem, "id" | "createdAt" | "updatedAt">) => {
     const newClass = timetableService.createClass(item);
     setClasses(normalizeClasses([...classes, newClass]));
+  };
+
+  const addClasses = (items: Array<Omit<ClassItem, "id" | "createdAt" | "updatedAt">>) => {
+    const imported = items.map((item) => timetableService.createClass(item));
+    setClasses(normalizeClasses([...classes, ...imported]));
   };
 
   /** แก้ไขรายวิชาที่มีรหัสตรงกัน */
@@ -70,6 +82,10 @@ export function useTimetableController() {
 
   /** นำข้อมูลสำรองที่ผ่านการปรับรูปแบบแล้วมาแทน state ปัจจุบัน */
   const replaceAll = (backup: TimetableBackup) => {
+    if (backup.plans?.length) {
+      replacePlans(backup.plans, backup.activePlanId ?? backup.plans[0].id);
+      return;
+    }
     replaceStoredState(
       normalizeClasses(backup.classes),
       normalizeSettings(backup.settings, defaultSettings)
@@ -84,9 +100,12 @@ export function useTimetableController() {
   return {
     classes,
     settings,
+    plans,
+    activePlanId,
     hydrated,
     setHydrated,
     addClass,
+    addClasses,
     updateClass,
     duplicateClass,
     deleteClass,
@@ -94,6 +113,10 @@ export function useTimetableController() {
     updateSettings,
     resetSample,
     replaceAll,
+    createPlan,
+    renamePlan,
+    switchPlan,
+    deletePlan,
     undo,
     redo,
     canUndo: past.length > 0,

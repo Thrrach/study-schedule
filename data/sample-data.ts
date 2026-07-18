@@ -9,6 +9,12 @@ export const defaultSettings: TimetableSettings = {
   semester: "",
   studentName: "",
   language: "th",
+  semesterStartDate: "",
+  semesterEndDate: "",
+  excludedDates: [],
+  makeupDays: [],
+  visibleDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+  lastBackupAt: "",
   timeSlots: [
     "08:00",
     "08:50",

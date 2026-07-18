@@ -4,23 +4,24 @@ import { Clock3, MapPin, UserRound } from "lucide-react";
 import { getSubjectTheme } from "@/lib/subject-theme";
 import { safeDays } from "@/lib/subject-utils";
 import { timeToMinutes } from "@/lib/time";
-import type { ClassItem } from "@/types/timetable";
+import type { ClassItem, Day } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
 import { useTranslation } from "@/lib/i18n";
 
 interface TimetableListViewProps {
   classes: ClassItem[];
   onView: (item: ClassItem) => void;
+  visibleDays?: Day[];
 }
 
 /** แสดงตารางเรียนแบบรายการ โดยจัดกลุ่มและเรียงรายวิชาตามวัน */
-export function TimetableListView({ classes, onView }: TimetableListViewProps) {
+export function TimetableListView({ classes, onView, visibleDays }: TimetableListViewProps) {
   const { t, language } = useTranslation();
   const safeClasses = Array.isArray(classes) ? classes : [];
 
   return (
     <section className="space-y-3">
-      {weekDays.map((day) => {
+      {weekDays.filter((day) => !visibleDays?.length || visibleDays.includes(day.key)).map((day) => {
         const dayClasses = safeClasses
           .filter((item) => safeDays(item.days).includes(day.key))
           .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
