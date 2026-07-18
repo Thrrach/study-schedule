@@ -6,7 +6,7 @@ import { ClassCard } from "@/components/ClassCard";
 import { buildHourLabels, durationToWidth, minutesToTime, timeToMinutes, timeToTimelineOffset } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { safeDays } from "@/lib/subject-utils";
-import type { ClassItem, WeekDay } from "@/types/timetable";
+import type { ClassItem, Day, WeekDay } from "@/types/timetable";
 import { weekDays } from "@/types/timetable";
 import { useTranslation } from "@/lib/i18n";
 
@@ -21,6 +21,7 @@ interface TimetableGridProps {
   classes: ClassItem[];
   startTime: string;
   endTime: string;
+  visibleDays?: Day[];
   exportMeta: {
     semester: string;
     studentName: string;
@@ -39,6 +40,7 @@ export function TimetableGrid({
   classes,
   startTime,
   endTime,
+  visibleDays,
   exportMeta,
   onDropClass,
   onAddClassAt,
@@ -67,7 +69,7 @@ export function TimetableGrid({
             />
             <TimelineHeader hourLabels={hourLabels} timelineStart={timelineStart} width={timelineWidth} />
 
-            {weekDays.map((day) => (
+            {weekDays.filter((day) => !visibleDays?.length || visibleDays.includes(day.key)).map((day) => (
               <DayRow
                 key={day.key}
                 day={day.key}

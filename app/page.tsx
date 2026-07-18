@@ -8,12 +8,14 @@ import {
   CalendarDays,
   CheckCircle2,
   FileDown,
+  FileSpreadsheet,
   FileUp,
   Grid3X3,
   HardDrive,
   List,
   Plus,
   Search,
+  Share2,
   RotateCcw,
   Redo2,
   SlidersHorizontal,
@@ -23,6 +25,7 @@ import {
   X
 } from "lucide-react";
 import { ClassForm } from "@/components/ClassForm";
+import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { ExportButton } from "@/components/ExportButton";
 import { SubjectDetailDialog } from "@/components/SubjectDetailDialog";
 import { TimetableGrid } from "@/components/TimetableGrid";
@@ -62,6 +65,7 @@ export default function Home() {
     classes,
     settings,
     addClass,
+    addClasses,
     updateClass,
     duplicateClass,
     deleteClass,
@@ -73,7 +77,13 @@ export default function Home() {
     undo,
     redo,
     canUndo,
-    canRedo
+    canRedo,
+    plans,
+    activePlanId,
+    createPlan,
+    renamePlan,
+    switchPlan,
+    deletePlan
   } = useTimetableController();
   const { t, language } = useTranslation();
 
@@ -93,6 +103,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDays, setSelectedDays] = useState<WeekDay[]>([]);
   const [selectedInstructors, setSelectedInstructors] = useState<string[]>([]);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const safeClasses = useMemo(() => normalizeClasses(classes), [classes]);
   const displayedSettings = settings;
@@ -210,12 +221,21 @@ export default function Home() {
 
   /** ส่งออกรายวิชาและการตั้งค่าปัจจุบันเป็นไฟล์สำรอง JSON */
   function exportJson() {
+    const exportedAt = new Date().toISOString();
+    const nextSettings = { ...settings, lastBackupAt: exportedAt };
     const backup: TimetableBackup = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      settings,
-      classes: safeClasses.map((item) => ({ ...item, days: safeDays(item.days) }))
+      version: 2,
+      exportedAt,
+      settings: nextSettings,
+      classes: safeClasses.map((item) => ({ ...item, days: safeDays(item.days) })),
+      plans: plans.map((plan) => plan.id === activePlanId ? { ...plan, settings: nextSettings, classes: safeClasses } : plan),
+      activePlanId
     };
+    updateSettings(nextSettings);
+    downloadBackup(backup);
+  }
+
+  function downloadBackup(backup: TimetableBackup) {
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -227,7 +247,13 @@ export default function Home() {
 
   /** ส่งออกตารางเรียนเป็นไฟล์ปฏิทิน iCalendar (.ics) */
   function exportIcs() {
-    const ics = buildIcs(safeClasses, settings.semester ? `PSU Timetable - ${settings.semester}` : "PSU Timetable");
+    const ics = buildIcs(safeClasses, {
+      calendarName: settings.semester ? `PSU Timetable - ${settings.semester}` : "PSU Timetable",
+      semesterStartDate: settings.semesterStartDate,
+      semesterEndDate: settings.semesterEndDate,
+      excludedDates: settings.excludedDates,
+      makeupDays: settings.makeupDays
+    });
     const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -235,6 +261,19 @@ export default function Home() {
     link.download = "psu-timetable.ics";
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function shareBackup() {
+    const exportedAt = new Date().toISOString();
+    const nextSettings = { ...settings, lastBackupAt: exportedAt };
+    const backup: TimetableBackup = { version: 2, exportedAt, settings: nextSettings, classes: safeClasses, plans, activePlanId };
+    const file = new File([JSON.stringify(backup, null, 2)], "psu-timetable-backup.json", { type: "application/json" });
+    updateSettings(nextSettings);
+    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+      await navigator.share({ title: "PSU Timetable Backup", files: [file] });
+      return;
+    }
+    downloadBackup(backup);
   }
 
   /** อ่านไฟล์ JSON ที่เลือก ตรวจสอบข้อมูล แล้วนำเข้ามาแทน state ปัจจุบัน */
@@ -270,6 +309,17 @@ export default function Home() {
             </div>
 
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
+              <Select value={activePlanId} onValueChange={switchPlan}>
+                <SelectTrigger className="w-full sm:w-[170px]" aria-label={language === "en" ? "Schedule plan" : "ชุดตาราง"}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {plans.map((plan) => <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="outline" size="icon" onClick={() => createPlan(language === "en" ? `Plan ${plans.length + 1}` : `ตาราง ${plans.length + 1}`)} aria-label={language === "en" ? "Create schedule plan" : "สร้างชุดตารางใหม่"}>
+                <Plus className="h-4 w-4" />
+              </Button>
               <Select value={settings.semester || "none"} onValueChange={(semester) => updateSettings({ ...settings, semester: semester === "none" ? "" : semester })}>
                 <SelectTrigger className="w-full sm:w-[190px]" aria-label={t("app.semester")}>
                   <SelectValue placeholder={t("app.semester")}>{settings.semester || t("app.semesterPlaceholder")}</SelectValue>
@@ -482,7 +532,7 @@ export default function Home() {
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 no-print">
           <Metric label={t("metrics.courses")} value={safeClasses.length.toString()} />
           <Metric label={t("metrics.overlaps")} value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
-          <Metric label={t("metrics.displayTime")} value={`${settings.startTime}-${settings.endTime}`} />
+          <Metric label={language === "en" ? "Total credits" : "หน่วยกิตรวม"} value={safeClasses.reduce((sum, item) => sum + (item.credits ?? 0), 0).toString()} />
           <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
             <div className="min-w-0">
@@ -498,6 +548,7 @@ export default function Home() {
               classes={filteredClasses}
               startTime={settings.startTime}
               endTime={settings.endTime}
+              visibleDays={settings.visibleDays}
               exportMeta={{ semester: settings.semester ?? "", studentName: settings.studentName ?? "", exportedAt: exportDate }}
               onDropClass={handleMoveClass}
               onAddClassAt={openNewFormAt}
@@ -509,7 +560,7 @@ export default function Home() {
           </div>
 
           <div className={cn("block", viewMode === "grid" ? "md:hidden" : "md:block")}>
-            <TimetableListView classes={filteredClasses} onView={setSelectedClass} />
+            <TimetableListView classes={filteredClasses} visibleDays={settings.visibleDays} onView={setSelectedClass} />
           </div>
         </div>
       </div>

@@ -26,7 +26,13 @@ const emptyClass: ClassPayload = {
   startTime: "08:00",
   endTime: "08:50",
   color: "#0f766e",
-  note: ""
+  note: "",
+  credits: 3,
+  classType: "lecture",
+  status: "planned",
+  onlineUrl: "",
+  midtermDate: "",
+  finalDate: ""
 };
 
 interface ClassFormProps {
@@ -202,6 +208,40 @@ export function ClassForm({
       <details className="rounded-lg border bg-slate-50/70 p-3">
         <summary className="cursor-pointer text-sm font-medium text-slate-700">{language === "en" ? "Additional Information (Optional)" : "ข้อมูลเพิ่มเติม (ไม่บังคับ)"}</summary>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <Field label={language === "en" ? "Credits" : "หน่วยกิต"}>
+            <Input type="number" min={0} max={30} step={0.5} value={value.credits ?? 0} onChange={(event) => update("credits", Number(event.target.value))} />
+          </Field>
+          <Field label={language === "en" ? "Class type" : "ประเภทคาบ"}>
+            <Select value={value.classType ?? "lecture"} onValueChange={(classType) => update("classType", classType as ClassPayload["classType"])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lecture">Lecture</SelectItem>
+                <SelectItem value="lab">Lab</SelectItem>
+                <SelectItem value="tutorial">Tutorial</SelectItem>
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label={language === "en" ? "Enrollment status" : "สถานะการลงทะเบียน"}>
+            <Select value={value.status ?? "planned"} onValueChange={(status) => update("status", status as ClassPayload["status"])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="planned">{language === "en" ? "Planned" : "กำลังวางแผน"}</SelectItem>
+                <SelectItem value="enrolled">{language === "en" ? "Enrolled" : "ลงทะเบียนแล้ว"}</SelectItem>
+                <SelectItem value="waitlisted">{language === "en" ? "Waitlisted" : "สำรอง"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label={language === "en" ? "Online class URL" : "ลิงก์ห้องเรียนออนไลน์"}>
+            <Input type="url" value={value.onlineUrl ?? ""} onChange={(event) => update("onlineUrl", event.target.value)} placeholder="https://..." />
+          </Field>
+          <Field label={language === "en" ? "Midterm date" : "วันสอบกลางภาค"}>
+            <Input type="date" value={value.midtermDate ?? ""} onChange={(event) => update("midtermDate", event.target.value)} />
+          </Field>
+          <Field label={language === "en" ? "Final date" : "วันสอบปลายภาค"}>
+            <Input type="date" value={value.finalDate ?? ""} onChange={(event) => update("finalDate", event.target.value)} />
+          </Field>
           <Field label={t("form.instructor")}>
             <Input value={value.instructor} onChange={(event) => update("instructor", event.target.value)} placeholder={language === "en" ? "Instructor name" : "ชื่อผู้สอน"} />
           </Field>

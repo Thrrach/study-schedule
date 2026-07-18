@@ -66,7 +66,13 @@ export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailD
               <Detail icon={<MapPin className="h-4 w-4" />} label={t("form.room")} value={item.room || "-"} />
               <Detail icon={<CalendarDays className="h-4 w-4" />} label={t("form.days")} value={dayLabels.join(", ") || "-"} />
               <Detail icon={<Clock3 className="h-4 w-4" />} label={t("filter.sortTime")} value={`${item.startTime} - ${item.endTime}`} />
+              <Detail label={language === "en" ? "Credits" : "หน่วยกิต"} value={String(item.credits ?? 0)} />
+              <Detail label={language === "en" ? "Class type" : "ประเภทคาบ"} value={item.classType ?? "lecture"} />
+              <Detail label={language === "en" ? "Status" : "สถานะ"} value={item.status ?? "planned"} />
+              <Detail label={language === "en" ? "Midterm / Final" : "กลางภาค / ปลายภาค"} value={`${item.midtermDate || "-"} / ${item.finalDate || "-"}`} />
             </dl>
+
+            {item.onlineUrl ? <a className="block rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm font-semibold text-sky-800 hover:bg-sky-100" href={item.onlineUrl} target="_blank" rel="noreferrer">{language === "en" ? "Open online classroom" : "เปิดห้องเรียนออนไลน์"}</a> : null}
 
             <div className="flex flex-wrap gap-2">
               {shortDayLabels.map((label) => (

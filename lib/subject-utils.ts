@@ -18,6 +18,19 @@ const dayAliases: Record<string, Day> = {
   Friday: "Friday",
   friday: "Friday",
   fri: "Friday",
+  Saturday: "Saturday",
+  saturday: "Saturday",
+  sat: "Saturday",
+  Sunday: "Sunday",
+  sunday: "Sunday",
+  sun: "Sunday",
+  "จันทร์": "Monday",
+  "อังคาร": "Tuesday",
+  "พุธ": "Wednesday",
+  "พฤหัสบดี": "Thursday",
+  "ศุกร์": "Friday",
+  "เสาร์": "Saturday",
+  "อาทิตย์": "Sunday"
 };
 
 export type RawClassItem = Partial<ClassItem> & {
@@ -59,6 +72,12 @@ export function normalizeClass(raw: unknown): ClassItem {
     endTime,
     color: normalizeColor(source.color),
     note: stringValue(source.note),
+    credits: normalizeCredits(source.credits),
+    classType: normalizeClassType(source.classType),
+    status: normalizeStatus(source.status),
+    onlineUrl: normalizeUrl(source.onlineUrl),
+    midtermDate: normalizeDate(source.midtermDate),
+    finalDate: normalizeDate(source.finalDate),
     createdAt: timestampValue(source.createdAt, timestamp),
     updatedAt: timestampValue(source.updatedAt, timestamp)
   };
@@ -143,4 +162,31 @@ function normalizeEndTime(value: unknown, startTime: string) {
 /** ตรวจสอบและคืนค่าสี hexadecimal 6 หลัก หรือใช้สีฟ้าเริ่มต้น */
 function normalizeColor(value: unknown) {
   return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#38bdf8";
+}
+
+function normalizeCredits(value: unknown) {
+  const credits = Number(value);
+  return Number.isFinite(credits) && credits >= 0 && credits <= 30 ? credits : 0;
+}
+
+function normalizeClassType(value: unknown): ClassItem["classType"] {
+  return value === "lab" || value === "tutorial" || value === "online" || value === "other" ? value : "lecture";
+}
+
+function normalizeStatus(value: unknown): ClassItem["status"] {
+  return value === "enrolled" || value === "waitlisted" ? value : "planned";
+}
+
+function normalizeDate(value: unknown) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+}
+
+function normalizeUrl(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
 }
