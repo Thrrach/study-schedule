@@ -111,7 +111,8 @@ export default function Home() {
   const semesterOptions = useMemo(() => buildSemesterOptions(settings.semester), [settings.semester]);
   const overlaps = draft ? findOverlaps(draft, editingClass?.id) : [];
   const totalOverlaps = useMemo(() => countOverlaps(safeClasses), [safeClasses]);
-  const backupDue = !settings.lastBackupAt || Date.now() - Date.parse(settings.lastBackupAt) > 14 * 24 * 60 * 60 * 1000;
+  const lastBackupTime = Date.parse(settings.lastBackupAt ?? "");
+  const backupDue = !Number.isFinite(lastBackupTime) || Date.now() - lastBackupTime > 14 * 24 * 60 * 60 * 1000;
   const availableInstructors = useMemo(
     () => Array.from(new Set(safeClasses.map((item) => item.instructor).filter(Boolean))).sort((a, b) => a.localeCompare(b, "th")),
     [safeClasses]
@@ -267,7 +268,7 @@ export default function Home() {
   async function shareBackup() {
     const exportedAt = new Date().toISOString();
     const nextSettings = { ...settings, lastBackupAt: exportedAt };
-    const backup: TimetableBackup = { version: 2, exportedAt, settings: nextSettings, classes: safeClasses, plans, activePlanId };
+    const backup: TimetableBackup = { version: 2, exportedAt, settings: nextSettings, classes: safeClasses, plans: plans.map((plan) => plan.id === activePlanId ? { ...plan, settings: nextSettings, classes: safeClasses } : plan), activePlanId };
     const file = new File([JSON.stringify(backup, null, 2)], "psu-timetable-backup.json", { type: "application/json" });
     updateSettings(nextSettings);
     if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {

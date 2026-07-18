@@ -37,7 +37,8 @@ export function buildIcs(classes: ClassItem[], options: string | CalendarOptions
   const semesterStart = parseLocalDate(normalizedOptions.semesterStartDate) ?? getMonday(now);
   const fallbackEnd = new Date(semesterStart);
   fallbackEnd.setDate(fallbackEnd.getDate() + (16 * 7) - 1);
-  const semesterEnd = parseLocalDate(normalizedOptions.semesterEndDate) ?? fallbackEnd;
+  const requestedEnd = parseLocalDate(normalizedOptions.semesterEndDate);
+  const semesterEnd = requestedEnd && requestedEnd >= semesterStart ? requestedEnd : fallbackEnd;
   const classEvents = classes
     .filter((item) => item.days.length > 0)
     .map((item) => buildEvent(item, semesterStart, semesterEnd, normalizedOptions, now))

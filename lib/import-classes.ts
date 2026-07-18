@@ -112,7 +112,7 @@ function normalizeHeader(value: string) {
 }
 
 function parseDays(value: string) {
-  return Array.from(new Set(value.split(/[\/|+;&]+/).map((day) => normalizeDay(day.trim())).filter((day): day is WeekDay => Boolean(day))));
+  return Array.from(new Set(value.split(/[\/,|+;&]+/).map((day) => normalizeDay(day.trim())).filter((day): day is WeekDay => Boolean(day))));
 }
 
 function normalizeImportedTime(value: string) {

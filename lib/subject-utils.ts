@@ -41,7 +41,8 @@ export type RawClassItem = Partial<ClassItem> & {
 /** แปลงชื่อวันหรือคำย่อที่รองรับเป็นชนิด Day มาตรฐาน */
 export function normalizeDay(value: unknown): Day | null {
   if (typeof value !== "string") return null;
-  return dayAliases[value] ?? null;
+  const normalized = value.trim();
+  return dayAliases[normalized] ?? dayAliases[normalized.toLowerCase()] ?? null;
 }
 
 /** คืนเฉพาะวันเรียนที่ถูกต้องและไม่ซ้ำจากข้อมูลนำเข้า */
