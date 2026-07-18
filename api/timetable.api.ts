@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { defaultSettings, sampleClasses } from "@/data/sample-data";
 import { normalizeClasses } from "@/lib/subject-utils";
+import { uid } from "@/lib/utils";
 import type { ClassItem, TimetablePlan, TimetableSettings } from "@/types/timetable";
 import { normalizeSettings } from "@/services/timetable.service";
 
@@ -90,7 +91,7 @@ export const useTimetableApi = create<TimetableState>()(
         };
       }),
       createPlan: (name) => set((state) => {
-        const id = crypto.randomUUID();
+        const id = uid();
         const plan = makePlan(id, name.trim() || `ตาราง ${state.plans.length + 1}`, [], state.settings);
         return { plans: [...state.plans, plan], activePlanId: id, classes: [], settings: plan.settings, past: [], future: [] };
       }),
@@ -184,7 +185,7 @@ function normalizePlans(value: unknown, fallbackClasses = normalizeClasses(sampl
   const plans = value.flatMap((raw) => {
     if (!raw || typeof raw !== "object") return [];
     const plan = raw as Partial<TimetablePlan>;
-    const id = typeof plan.id === "string" && plan.id ? plan.id : crypto.randomUUID();
+    const id = typeof plan.id === "string" && plan.id ? plan.id : uid();
     return [{
       id,
       name: typeof plan.name === "string" && plan.name.trim() ? plan.name.trim() : "ตารางเรียน",

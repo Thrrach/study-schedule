@@ -38,10 +38,15 @@ export function buildIcs(classes: ClassItem[], options: string | CalendarOptions
   const fallbackEnd = new Date(semesterStart);
   fallbackEnd.setDate(fallbackEnd.getDate() + (16 * 7) - 1);
   const semesterEnd = parseLocalDate(normalizedOptions.semesterEndDate) ?? fallbackEnd;
-  const events = classes
+  const classEvents = classes
     .filter((item) => item.days.length > 0)
     .map((item) => buildEvent(item, semesterStart, semesterEnd, normalizedOptions, now))
     .join("\r\n");
+  const examEvents = classes.flatMap((item) => [
+    item.midtermDate ? buildAllDayEvent(item, item.midtermDate, "Midterm exam", now) : "",
+    item.finalDate ? buildAllDayEvent(item, item.finalDate, "Final exam", now) : ""
+  ]).filter(Boolean).join("\r\n");
+  const events = [classEvents, examEvents].filter(Boolean).join("\r\n");
 
   return [
     "BEGIN:VCALENDAR",
@@ -76,7 +81,8 @@ function buildEvent(item: ClassItem, semesterStart: Date, semesterEnd: Date, opt
   const description = [
     item.instructor ? `Instructor: ${item.instructor}` : "",
     item.section ? `Section: ${item.section}` : "",
-    item.note ?? ""
+    item.note ?? "",
+    item.onlineUrl ? `Online: ${item.onlineUrl}` : ""
   ].filter(Boolean).join("\\n");
 
   const excluded = (options.excludedDates ?? [])
@@ -107,6 +113,22 @@ function buildEvent(item: ClassItem, semesterStart: Date, semesterEnd: Date, opt
   ].filter(Boolean).join("\r\n");
 }
 
+function buildAllDayEvent(item: ClassItem, dateValue: string, label: string, now: Date) {
+  const date = parseLocalDate(dateValue);
+  if (!date) return "";
+  const end = new Date(date);
+  end.setDate(end.getDate() + 1);
+  return [
+    "BEGIN:VEVENT",
+    `UID:${item.id}-${label.toLowerCase().replace(/\s+/g, "-")}@psu-timetable.local`,
+    `DTSTAMP:${formatUtcDateTime(now)}`,
+    `DTSTART;VALUE=DATE:${formatDate(date)}`,
+    `DTEND;VALUE=DATE:${formatDate(end)}`,
+    `SUMMARY:${escapeText(`${label}: ${item.courseCode} ${item.courseName}`.trim())}`,
+    "END:VEVENT"
+  ].join("\r\n");
+}
+
 function firstOccurrenceOnOrAfter(start: Date, day: Day) {
   const monday = getMonday(start);
   const occurrence = new Date(monday);
@@ -129,6 +151,10 @@ function parseLocalDate(value: string | undefined) {
 function formatUntil(date: Date) {
   const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 16, 59, 59));
   return formatUtcDateTime(utc);
+}
+
+function formatDate(date: Date) {
+  return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`;
 }
 
 /** หาวันจันทร์ของสัปดาห์เดียวกับวันที่ระบุ */

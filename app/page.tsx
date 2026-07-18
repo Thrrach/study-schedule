@@ -111,6 +111,7 @@ export default function Home() {
   const semesterOptions = useMemo(() => buildSemesterOptions(settings.semester), [settings.semester]);
   const overlaps = draft ? findOverlaps(draft, editingClass?.id) : [];
   const totalOverlaps = useMemo(() => countOverlaps(safeClasses), [safeClasses]);
+  const backupDue = !settings.lastBackupAt || Date.now() - Date.parse(settings.lastBackupAt) > 14 * 24 * 60 * 60 * 1000;
   const availableInstructors = useMemo(
     () => Array.from(new Set(safeClasses.map((item) => item.instructor).filter(Boolean))).sort((a, b) => a.localeCompare(b, "th")),
     [safeClasses]
@@ -369,6 +370,8 @@ export default function Home() {
           </div>
         </header>
 
+        {backupDue ? <div className="no-print flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between"><div><strong>{language === "en" ? "Backup recommended" : "แนะนำให้สำรองข้อมูล"}</strong><p className="text-amber-800">{language === "en" ? "Your data is stored on this browser. Save or share a backup to protect it when changing devices." : "ข้อมูลอยู่ในเบราว์เซอร์เครื่องนี้ ควรบันทึกหรือแชร์ไฟล์สำรองก่อนเปลี่ยนเครื่อง"}</p></div><Button variant="outline" className="border-amber-300 bg-white" onClick={exportJson}><FileDown className="h-4 w-4" />{language === "en" ? "Back up now" : "สำรองตอนนี้"}</Button></div> : null}
+
         <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur no-print">
           <div className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
             <div className="space-y-4">
@@ -596,7 +599,7 @@ export default function Home() {
       </Dialog>
 
       <Dialog open={toolsOpen} onOpenChange={setToolsOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-5xl">
           <DialogHeader>
             <DialogTitle>{t("tools.title")}</DialogTitle>
           </DialogHeader>
@@ -618,6 +621,10 @@ export default function Home() {
                 <Button onClick={() => openNewForm()} className="w-full justify-start">
                   <Plus className="h-4 w-4" />
                   {t("tools.addClass")}
+                </Button>
+                <Button variant="outline" onClick={() => { setToolsOpen(false); setBulkImportOpen(true); }} className="w-full justify-start">
+                  <FileSpreadsheet className="h-4 w-4" />
+                  {language === "en" ? "Import CSV / text" : "นำเข้า CSV / ข้อความ"}
                 </Button>
                 <Select value={imageFormat} onValueChange={(value) => setImageFormat(value as ImageFormat)}>
                   <SelectTrigger aria-label="รูปแบบไฟล์ภาพ">
@@ -643,8 +650,26 @@ export default function Home() {
                     {t("tools.importJson")}
                   </Button>
                 </div>
+                <Button variant="outline" onClick={() => void shareBackup()} className="w-full justify-start">
+                  <Share2 className="h-4 w-4" />
+                  {language === "en" ? "Share backup" : "แชร์ไฟล์สำรอง"}
+                </Button>
                 <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={importJson} />
                 {importError ? <p className="text-sm text-destructive">{importError}</p> : null}
+                <div className="rounded-lg border bg-white p-3 text-sm">
+                  <div className="font-semibold">{language === "en" ? "Current schedule plan" : "ชุดตารางปัจจุบัน"}</div>
+                  <Input className="mt-2" value={plans.find((plan) => plan.id === activePlanId)?.name ?? ""} onChange={(event) => renamePlan(activePlanId, event.target.value)} />
+                  <Button className="mt-2 w-full" variant="ghost" disabled={plans.length <= 1} onClick={() => deletePlan(activePlanId)}>
+                    <Trash2 className="h-4 w-4" />
+                    {language === "en" ? "Delete this plan" : "ลบชุดตารางนี้"}
+                  </Button>
+                  <div className="mt-3 space-y-1 border-t pt-3">
+                    {plans.map((plan) => <button type="button" key={plan.id} onClick={() => switchPlan(plan.id)} className={cn("flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs", plan.id === activePlanId ? "bg-sky-50 text-sky-900" : "hover:bg-slate-50")}>
+                      <span className="truncate font-semibold">{plan.name}</span>
+                      <span className="text-slate-500">{plan.classes.length} {language === "en" ? "courses" : "วิชา"} · {plan.classes.reduce((sum, item) => sum + (item.credits ?? 0), 0)} {language === "en" ? "credits" : "หน่วยกิต"} · {countOverlaps(plan.classes)} {language === "en" ? "conflicts" : "ชน"}</span>
+                    </button>)}
+                  </div>
+                </div>
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -663,6 +688,14 @@ export default function Home() {
       </Dialog>
 
       <SubjectDetailDialog item={selectedClass} open={Boolean(selectedClass)} onOpenChange={(open) => !open && setSelectedClass(null)} />
+      <BulkImportDialog
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
+        onImport={(items) => {
+          addClasses(items);
+          toast({ variant: "success", title: language === "en" ? "Courses imported" : "นำเข้ารายวิชาแล้ว", description: `${items.length}` });
+        }}
+      />
 
       <Dialog open={Boolean(classToDelete)} onOpenChange={(open) => !open && setClassToDelete(null)}>
         <DialogContent className="max-w-md">
@@ -733,6 +766,9 @@ function SettingsForm({
   );
   const invalidRange = timeToMinutes(settings.endTime) <= timeToMinutes(settings.startTime);
   const [newSlot, setNewSlot] = useState(slots[0] ?? "08:00");
+  const [makeupDate, setMakeupDate] = useState("");
+  const [makeupDay, setMakeupDay] = useState<WeekDay>("Monday");
+  const [excludedDate, setExcludedDate] = useState("");
 
   useEffect(() => {
     setNewSlot(slots[0] ?? "08:00");
@@ -796,6 +832,41 @@ function SettingsForm({
               ))}
             </SelectContent>
           </Select>
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={language === "en" ? "Semester starts" : "วันเปิดภาคเรียน"}>
+            <Input type="date" value={settings.semesterStartDate ?? ""} onChange={(event) => onChange({ ...settings, semesterStartDate: event.target.value })} />
+          </Field>
+          <Field label={language === "en" ? "Semester ends" : "วันปิดภาคเรียน"}>
+            <Input type="date" value={settings.semesterEndDate ?? ""} onChange={(event) => onChange({ ...settings, semesterEndDate: event.target.value })} />
+          </Field>
+        </div>
+        {settings.semesterStartDate && settings.semesterEndDate && settings.semesterEndDate < settings.semesterStartDate ? <p className="text-xs font-medium text-destructive">{language === "en" ? "End date must be after start date" : "วันปิดภาคเรียนต้องอยู่หลังวันเปิดภาคเรียน"}</p> : null}
+        <Field label={language === "en" ? "Days shown on timetable" : "วันที่แสดงในตาราง"}>
+          <div className="flex flex-wrap gap-2 rounded-md border bg-white p-2">
+            {weekDays.map((day) => {
+              const selected = (settings.visibleDays ?? []).includes(day.key);
+              return <button key={day.key} type="button" aria-pressed={selected} onClick={() => {
+                const visibleDays = selected ? (settings.visibleDays ?? []).filter((item) => item !== day.key) : [...(settings.visibleDays ?? []), day.key];
+                if (visibleDays.length) onChange({ ...settings, visibleDays });
+              }} className={cn("rounded border px-2 py-1 text-xs font-semibold", selected ? "border-primary bg-primary text-white" : "bg-white text-slate-600")}>{language === "en" ? day.shortLabelEn : day.shortLabelTh}</button>;
+            })}
+          </div>
+        </Field>
+        <Field label={language === "en" ? "No-class dates" : "วันงดเรียน"}>
+          <div className="flex gap-2"><Input type="date" value={excludedDate} onChange={(event) => setExcludedDate(event.target.value)} /><Button type="button" variant="secondary" size="icon" disabled={!excludedDate} onClick={() => { onChange({ ...settings, excludedDates: [...(settings.excludedDates ?? []), excludedDate] }); setExcludedDate(""); }}><Plus className="h-4 w-4" /></Button></div>
+          {(settings.excludedDates ?? []).map((date) => <div key={date} className="mt-2 flex items-center justify-between rounded border bg-white px-2 py-1 text-xs"><span>{date}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => onChange({ ...settings, excludedDates: (settings.excludedDates ?? []).filter((item) => item !== date) })}><X className="h-3.5 w-3.5" /></Button></div>)}
+        </Field>
+        <Field label={language === "en" ? "Make-up class dates" : "วันเรียนชดเชย"}>
+          <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+            <Input type="date" value={makeupDate} onChange={(event) => setMakeupDate(event.target.value)} />
+            <Select value={makeupDay} onValueChange={(day) => setMakeupDay(day as WeekDay)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{weekDays.map((day) => <SelectItem key={day.key} value={day.key}>{language === "en" ? day.shortLabelEn : day.shortLabelTh}</SelectItem>)}</SelectContent>
+            </Select>
+            <Button type="button" variant="secondary" size="icon" disabled={!makeupDate} onClick={() => { onChange({ ...settings, makeupDays: [...(settings.makeupDays ?? []), { date: makeupDate, followsDay: makeupDay }] }); setMakeupDate(""); }}><Plus className="h-4 w-4" /></Button>
+          </div>
+          {(settings.makeupDays ?? []).map((entry, index) => <div key={`${entry.date}-${index}`} className="mt-2 flex items-center justify-between rounded border bg-white px-2 py-1 text-xs"><span>{entry.date} → {entry.followsDay}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => onChange({ ...settings, makeupDays: (settings.makeupDays ?? []).filter((_, itemIndex) => itemIndex !== index) })}><X className="h-3.5 w-3.5" /></Button></div>)}
         </Field>
       </div>
 
@@ -929,7 +1000,13 @@ function toPayload(item: ClassItem): ClassPayload {
     startTime: item.startTime,
     endTime: item.endTime,
     color: item.color,
-    note: item.note
+    note: item.note,
+    credits: item.credits,
+    classType: item.classType,
+    status: item.status,
+    onlineUrl: item.onlineUrl,
+    midtermDate: item.midtermDate,
+    finalDate: item.finalDate
   };
 }
 
@@ -1019,7 +1096,7 @@ function normalizeImport(value: RawTimetableImport): TimetableBackup {
   const rawSettings = value.settings && typeof value.settings === "object" ? value.settings : defaultSettings;
 
   return {
-    version: 1,
+    version: value.version === 2 ? 2 : 1,
     exportedAt: typeof value.exportedAt === "string" ? value.exportedAt : new Date().toISOString(),
     settings: {
       ...defaultSettings,
@@ -1028,7 +1105,9 @@ function normalizeImport(value: RawTimetableImport): TimetableBackup {
         ? normalizeTimeSlots((rawSettings as Partial<TimetableSettings>).timeSlots)
         : defaultSettings.timeSlots
     },
-    classes: normalizeClasses(rawClasses)
+    classes: normalizeClasses(rawClasses),
+    plans: Array.isArray(value.plans) ? value.plans : undefined,
+    activePlanId: typeof value.activePlanId === "string" ? value.activePlanId : undefined
   };
 }
 
@@ -1047,7 +1126,9 @@ function weekDayIndex(day: string): number {
     Tuesday: 1,
     Wednesday: 2,
     Thursday: 3,
-    Friday: 4
+    Friday: 4,
+    Saturday: 5,
+    Sunday: 6
   };
   return dayMap[day] ?? 0;
 }

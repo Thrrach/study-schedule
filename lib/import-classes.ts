@@ -69,15 +69,15 @@ export function parseClassImport(text: string): ImportResult {
       days,
       startTime,
       endTime,
-      instructor: record.instructor,
-      room: record.room,
+      instructor: record.instructor ?? "",
+      room: record.room ?? "",
       credits: normalizeCredits(record.credits),
       classType: normalizeType(record.classType),
       status: normalizeStatus(record.status),
-      onlineUrl: record.onlineUrl,
+      onlineUrl: record.onlineUrl ?? "",
       midtermDate: normalizeDate(record.midtermDate),
       finalDate: normalizeDate(record.finalDate),
-      note: record.note,
+      note: record.note ?? "",
       color: colors[classes.length % colors.length]
     });
   });
@@ -126,8 +126,8 @@ function normalizeCredits(value: string) {
   return Number.isFinite(credits) && credits >= 0 && credits <= 30 ? credits : 0;
 }
 
-function normalizeType(value: string): ClassType {
-  const normalized = value.trim().toLowerCase();
+function normalizeType(value: string | undefined): ClassType {
+  const normalized = value?.trim().toLowerCase() ?? "";
   if (["lab", "ปฏิบัติการ"].includes(normalized)) return "lab";
   if (["tutorial", "ติว"].includes(normalized)) return "tutorial";
   if (["online", "ออนไลน์"].includes(normalized)) return "online";
@@ -135,13 +135,13 @@ function normalizeType(value: string): ClassType {
   return "lecture";
 }
 
-function normalizeStatus(value: string): EnrollmentStatus {
-  const normalized = value.trim().toLowerCase();
+function normalizeStatus(value: string | undefined): EnrollmentStatus {
+  const normalized = value?.trim().toLowerCase() ?? "";
   if (["enrolled", "ลงทะเบียนแล้ว"].includes(normalized)) return "enrolled";
   if (["waitlisted", "สำรอง"].includes(normalized)) return "waitlisted";
   return "planned";
 }
 
-function normalizeDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
+function normalizeDate(value: string | undefined) {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
 }
