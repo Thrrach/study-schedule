@@ -27,30 +27,30 @@ export function TimetableListView({ classes, onView, visibleDays }: TimetableLis
           .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
         return (
-          <div key={day.key} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between gap-3 border-b bg-slate-50 px-4 py-3">
-              <div className="text-sm font-semibold text-slate-800">{language === "en" ? day.labelEn : day.labelTh}</div>
-              <div className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+          <div key={day.key} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b bg-muted/60 px-4 py-3">
+              <div className="text-sm font-bold text-foreground">{language === "en" ? day.labelEn : day.labelTh}</div>
+              <div className="rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-muted-foreground ring-1 ring-border">
                 {t("results.coursesCount", { count: dayClasses.length })}
               </div>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-border">
               {dayClasses.length ? (
                 dayClasses.map((item) => {
-                  const theme = getSubjectTheme(item);
+                  const theme = getSubjectTheme(item, language);
 
                   return (
                     <button
                       key={`${day.key}-${item.id}`}
                       type="button"
-                      className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:grid-cols-[138px_1fr]"
+                      className="grid w-full gap-3 px-4 py-3 text-left transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:grid-cols-[138px_1fr]"
                       onClick={() => onView(item)}
                     >
-                      <div className="flex items-start gap-2 text-sm font-semibold text-slate-700">
-                        <Clock3 className="mt-0.5 h-4 w-4 text-slate-400" />
+                      <div className="flex items-start gap-2 text-sm font-semibold text-foreground">
+                        <Clock3 className="mt-0.5 h-4 w-4 text-muted-foreground" />
                         <div>
                           <div>{item.startTime} - {item.endTime}</div>
-                          <div className="mt-1 text-xs font-medium text-slate-500">{t("card.sec")} {item.section || "-"}</div>
+                          <div className="mt-1 text-xs font-medium text-muted-foreground">{t("card.sec")} {item.section || "-"}</div>
                         </div>
                       </div>
                       <div className="min-w-0">
@@ -61,10 +61,10 @@ export function TimetableListView({ classes, onView, visibleDays }: TimetableLis
                           >
                             {theme.label}
                           </span>
-                          <span className="text-sm font-bold text-slate-950">{item.courseCode}</span>
+                          <span className="text-sm font-bold text-foreground">{item.courseCode}</span>
                         </div>
-                        <div className="mt-1 text-sm font-semibold leading-5 text-slate-800">{item.courseName}</div>
-                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+                        <div className="mt-1 text-sm font-semibold leading-5 text-foreground">{item.courseName}</div>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                           {item.room ? (
                             <span className="inline-flex items-center gap-1">
                               <MapPin className="h-3.5 w-3.5" />
@@ -78,13 +78,13 @@ export function TimetableListView({ classes, onView, visibleDays }: TimetableLis
                             </span>
                           ) : null}
                         </div>
-                        {item.note ? <div className="mt-2 text-xs leading-5 text-slate-500">{item.note}</div> : null}
+                        {item.note ? <div className="mt-2 text-xs leading-5 text-muted-foreground">{item.note}</div> : null}
                       </div>
                     </button>
                   );
                 })
               ) : (
-                <div className="px-4 py-5 text-sm text-slate-500">{t("list.noClasses")}</div>
+                <div className="px-4 py-5 text-sm text-muted-foreground">{t("list.noClasses")}</div>
               )}
             </div>
           </div>

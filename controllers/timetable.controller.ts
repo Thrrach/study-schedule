@@ -49,10 +49,10 @@ export function useTimetableController() {
   };
 
   /** ทำสำเนารายวิชาที่เลือกเมื่อพบข้อมูลต้นฉบับ */
-  const duplicateClass = (id: string) => {
+  const duplicateClass = (id: string, copyLabel?: string) => {
     const source = classes.find((item) => item.id === id);
     if (!source) return;
-    const newClass = timetableService.duplicateClass(source);
+    const newClass = timetableService.duplicateClass(source, copyLabel);
     setClasses(normalizeClasses([...classes, newClass]));
   };
 

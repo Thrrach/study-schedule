@@ -27,4 +27,9 @@ describe("parseClassImport", () => {
     expect(result.classes).toEqual([]);
     expect(result.errors).toEqual(["แถว 2: ช่วงเวลาไม่ถูกต้อง", "แถว 3: ต้องมีรหัสวิชาและชื่อวิชา"]);
   });
+
+  it("localizes import validation errors in English", () => {
+    const result = parseClassImport("code,name,section,day,start,end\n344-211,Database,01,Monday,10:00,09:00", "en");
+    expect(result.errors).toEqual(["Row 2: invalid time range"]);
+  });
 });

@@ -58,14 +58,14 @@ export function TimetableGrid({
   const gridWidth = DAY_COLUMN_WIDTH + timelineWidth;
 
   return (
-    <section className="print-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="max-h-[calc(100vh-220px)] overflow-auto scroll-smooth bg-white">
-        <div id="timetable-export" className="w-max min-w-full bg-white p-4" style={{ minWidth: gridWidth }}>
+    <section className="print-full overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <div className="max-h-[calc(100vh-220px)] overflow-auto scroll-smooth bg-card">
+        <div id="timetable-export" className="w-max min-w-full bg-card p-4" style={{ minWidth: gridWidth }}>
           <ExportHeader meta={exportMeta} width={gridWidth} />
-          <div className="grid overflow-visible bg-white" style={{ gridTemplateColumns: `${DAY_COLUMN_WIDTH}px ${timelineWidth}px` }}>
+          <div className="grid overflow-visible bg-card" style={{ gridTemplateColumns: `${DAY_COLUMN_WIDTH}px ${timelineWidth}px` }}>
             <div
               data-export-sticky
-              className="sticky left-0 top-0 z-30 border-b border-r border-slate-300 bg-slate-100 px-3 py-3"
+              className="sticky left-0 top-0 z-30 border-b border-r bg-muted px-3 py-3"
             />
             <TimelineHeader hourLabels={hourLabels} timelineStart={timelineStart} width={timelineWidth} />
 
@@ -143,14 +143,14 @@ function TimelineHeader({
   width: number;
 }) {
   return (
-    <div data-export-sticky className="sticky top-0 z-20 border-b border-r border-slate-300 bg-slate-100" style={{ width }}>
+    <div data-export-sticky className="sticky top-0 z-20 border-b border-r bg-muted" style={{ width }}>
       <div className="relative min-h-14" style={{ width }}>
         {hourLabels.map((hour, index) => {
           const isEnd = index === hourLabels.length - 1;
           return (
             <div
               key={hour}
-              className="absolute top-0 h-full border-l border-slate-300 text-sm font-semibold text-slate-700"
+              className="absolute top-0 h-full border-l border-border text-sm font-semibold text-muted-foreground"
               style={{
                 left: timeToTimelineOffset(hour, timelineStart, HOUR_COLUMN_WIDTH),
                 width: 0
@@ -207,15 +207,15 @@ function DayRow({
     <>
       <div
         data-export-sticky
-        className="sticky left-0 z-10 flex flex-col items-center justify-center gap-2 border-b border-r border-slate-300 bg-slate-50 px-3 py-3 text-center text-sm font-semibold text-slate-700"
+        className="sticky left-0 z-10 flex flex-col items-center justify-center gap-2 border-b border-r bg-muted/80 px-3 py-3 text-center text-sm font-semibold text-foreground"
         style={{ minHeight: rowHeight }}
       >
         <span>{dayLabel}</span>
-        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">
+        <span className="rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold text-muted-foreground ring-1 ring-border">
           {t("results.coursesCount", { count: classes.length })}
         </span>
       </div>
-      <div className="relative overflow-visible border-b border-r border-slate-200 bg-white" style={{ width: timelineWidth, height: rowHeight }}>
+      <div className="relative overflow-visible border-b border-r bg-card" style={{ width: timelineWidth, height: rowHeight }}>
         <TimelineBackground
           day={day}
           timelineStart={timelineStart}
@@ -292,12 +292,12 @@ function TimelineBackground({
     return minutesToTime(clamp(snappedMinutes, start, end - DROP_STEP_MINUTES));
   }
 
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   
   return (
     <div
-      className="group absolute inset-0 cursor-crosshair border-l border-slate-300"
-      aria-label={`Add class to ${language === "en" ? weekDays.find((item) => item.key === day)?.labelEn : weekDays.find((item) => item.key === day)?.labelTh}`}
+      className="group absolute inset-0 cursor-crosshair border-l border-border"
+      aria-label={t("grid.addClass", { day: language === "en" ? weekDays.find((item) => item.key === day)?.labelEn ?? day : weekDays.find((item) => item.key === day)?.labelTh ?? day })}
       onClick={(event) => onAddClassAt(day, eventToTime(event))}
       onDragOver={(event) => {
         event.preventDefault();
@@ -317,8 +317,8 @@ function TimelineBackground({
           <div
             key={`${day}-${time}`}
             className={cn(
-              "pointer-events-none absolute top-0 h-full border-r border-slate-100 transition-colors group-hover:bg-sky-50/30",
-              isHour && "border-l border-l-slate-300"
+              "pointer-events-none absolute top-0 h-full border-r border-border/50 transition-colors group-hover:bg-primary/[0.03]",
+              isHour && "border-l border-l-border"
             )}
             style={{
               left,

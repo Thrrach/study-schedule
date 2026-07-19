@@ -4,6 +4,7 @@ import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
+  BookOpen,
   CalendarPlus,
   CalendarDays,
   CheckCircle2,
@@ -25,6 +26,7 @@ import {
   X
 } from "lucide-react";
 import { ClassForm } from "@/components/ClassForm";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { ExportButton } from "@/components/ExportButton";
 import { SubjectDetailDialog } from "@/components/SubjectDetailDialog";
@@ -108,7 +110,7 @@ export default function Home() {
   const safeClasses = useMemo(() => normalizeClasses(classes), [classes]);
   const displayedSettings = settings;
   const timeOptions = useMemo(() => generateTimeSlots(displayedSettings), [displayedSettings]);
-  const semesterOptions = useMemo(() => buildSemesterOptions(settings.semester), [settings.semester]);
+  const semesterOptions = useMemo(() => buildSemesterOptions(settings.semester, language), [language, settings.semester]);
   const overlaps = draft ? findOverlaps(draft, editingClass?.id) : [];
   const totalOverlaps = useMemo(() => countOverlaps(safeClasses), [safeClasses]);
   const lastBackupTime = Date.parse(settings.lastBackupAt ?? "");
@@ -126,6 +128,10 @@ export default function Home() {
     () => sortAndFilterClasses(safeClasses, { searchTerm, sortBy, selectedDays, selectedInstructors }),
     [safeClasses, searchTerm, sortBy, selectedDays, selectedInstructors]
   );
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   useEffect(() => {
     /** รองรับคีย์ลัด undo/redo โดยไม่รบกวนการพิมพ์ในช่องข้อมูล */
@@ -191,7 +197,7 @@ export default function Home() {
   function handleSaveSuccess(action: "create" | "update", payload: ClassPayload) {
     toast({
       variant: "success",
-      title: action === "create" ? "เพิ่มรายวิชาแล้ว" : "บันทึกการแก้ไขแล้ว",
+      title: action === "create" ? t("toast.added") : t("toast.updated"),
       description: formatClassLabel(payload)
     });
   }
@@ -199,9 +205,9 @@ export default function Home() {
   /** ทำสำเนารายวิชาและแจ้งผลเมื่อพบรายการต้นฉบับ */
   function handleDuplicateClass(id: string) {
     const source = safeClasses.find((item) => item.id === id);
-    duplicateClass(id);
+    duplicateClass(id, t("card.copySuffix"));
     if (!source) return;
-    toast({ variant: "success", title: "สร้างสำเนารายวิชาแล้ว", description: formatClassLabel(source) });
+    toast({ variant: "success", title: t("toast.duplicated"), description: formatClassLabel(source) });
   }
 
   /** ลบรายวิชาที่ผู้ใช้ยืนยันจาก dialog และแสดงข้อความแจ้งผล */
@@ -210,7 +216,7 @@ export default function Home() {
     const removed = classToDelete;
     deleteClass(removed.id);
     setClassToDelete(null);
-    toast({ variant: "success", title: "ลบรายวิชาแล้ว", description: formatClassLabel(removed) });
+    toast({ variant: "success", title: t("toast.deleted"), description: formatClassLabel(removed) });
   }
 
   /** ย้ายรายวิชาจากการลากวาง แล้วแจ้งวันและเวลาใหม่ */
@@ -218,7 +224,8 @@ export default function Home() {
     const source = safeClasses.find((item) => item.id === id);
     moveClass(id, day, startTime, sourceDay);
     if (!source) return;
-    toast({ variant: "info", title: "ย้ายรายวิชาแล้ว", description: `${formatClassLabel(source)} • ${day} ${startTime}` });
+    const localizedDay = weekDays.find((item) => item.key === day);
+    toast({ variant: "info", title: t("toast.moved"), description: `${formatClassLabel(source)} • ${language === "en" ? localizedDay?.labelEn : localizedDay?.labelTh} ${startTime}` });
   }
 
   /** ส่งออกรายวิชาและการตั้งค่าปัจจุบันเป็นไฟล์สำรอง JSON */
@@ -288,99 +295,134 @@ export default function Home() {
       const backup = normalizeImport(parsed);
       replaceAll(backup);
       setImportError("");
-      toast({ variant: "success", title: "นำเข้าข้อมูลแล้ว", description: `${backup.classes.length} รายวิชา` });
+      toast({ variant: "success", title: t("toast.imported"), description: t("results.coursesCount", { count: backup.classes.length }) });
     } catch {
-      setImportError("นำเข้าไฟล์ไม่ได้ กรุณาใช้ไฟล์สำรอง JSON ที่ส่งออกจากหน้านี้");
-      toast({ variant: "error", title: "นำเข้าข้อมูลไม่สำเร็จ", description: "กรุณาใช้ไฟล์ JSON ที่ส่งออกจากหน้านี้" });
+      setImportError(t("toast.importFailedDesc"));
+      toast({ variant: "error", title: t("toast.importFailed"), description: t("toast.importFailedDesc") });
     } finally {
       event.target.value = "";
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7fa] px-3 py-4 text-slate-950 sm:px-5 md:px-8 md:py-6">
-      <div className="relative mx-auto flex max-w-[1680px] flex-col gap-4">
-        <header className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm no-print">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-primary">
-                <CalendarDays className="h-4 w-4" />
-                {t("app.title")}
+    <main className="app-shell min-h-screen px-3 py-3 text-foreground sm:px-5 md:px-8 md:py-6">
+      <div className="relative mx-auto flex max-w-[1680px] flex-col gap-5">
+        <header className="no-print overflow-hidden rounded-2xl border bg-card/95 shadow-sm backdrop-blur-xl">
+          <div className="flex flex-col gap-4 p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 items-center gap-3.5">
+              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                <CalendarDays className="h-6 w-6" />
+                <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-card bg-amber-400" />
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">{t("app.subtitle")}</h1>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <h1 className="truncate text-lg font-bold tracking-tight sm:text-xl">{t("app.title")}</h1>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">PSU</span>
+                </div>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground sm:text-sm">{t("app.workspace")}</p>
+              </div>
             </div>
 
-            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
-              <Select value={activePlanId} onValueChange={switchPlan}>
-                <SelectTrigger className="w-full sm:w-[170px]" aria-label={language === "en" ? "Schedule plan" : "ชุดตาราง"}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {plans.map((plan) => <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Button type="button" variant="outline" size="icon" onClick={() => createPlan(language === "en" ? `Plan ${plans.length + 1}` : `ตาราง ${plans.length + 1}`)} aria-label={language === "en" ? "Create schedule plan" : "สร้างชุดตารางใหม่"}>
-                <Plus className="h-4 w-4" />
+            <div className="flex flex-wrap items-center gap-2">
+              <ThemeToggle />
+              <div className="inline-flex items-center rounded-xl border bg-muted/70 p-1" role="group" aria-label={t("language.label")}>
+                {(["th", "en"] as const).map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => updateSettings({ ...settings, language: lang })}
+                    className={cn(
+                      "h-8 rounded-lg px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      language === lang ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                    aria-pressed={language === lang}
+                    aria-label={lang === "th" ? t("language.thai") : t("language.english")}
+                  >
+                    {lang.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <Button type="button" variant="outline" size="icon" onClick={() => setToolsOpen(true)} aria-label={t("app.tools")} title={t("app.tools")}>
+                <SlidersHorizontal className="h-4 w-4" />
               </Button>
+            </div>
+          </div>
+
+          <div className="border-t bg-muted/30 p-4 sm:p-5">
+            <div className="grid gap-3 xl:grid-cols-[minmax(220px,0.8fr)_minmax(190px,0.65fr)_auto_1fr] xl:items-center">
+              <div className="flex gap-2">
+                <Select value={activePlanId} onValueChange={switchPlan}>
+                  <SelectTrigger className="min-w-0 flex-1" aria-label={t("app.plan")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {plans.map((plan) => <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" size="icon" onClick={() => createPlan(language === "en" ? `Plan ${plans.length + 1}` : `ตาราง ${plans.length + 1}`)} aria-label={t("app.createPlan")} title={t("app.createPlan")}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
               <Select value={settings.semester || "none"} onValueChange={(semester) => updateSettings({ ...settings, semester: semester === "none" ? "" : semester })}>
-                <SelectTrigger className="w-full sm:w-[190px]" aria-label={t("app.semester")}>
+                <SelectTrigger className="w-full" aria-label={t("app.semester")}>
                   <SelectValue placeholder={t("app.semester")}>{settings.semester || t("app.semesterPlaceholder")}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("app.semesterPlaceholder")}</SelectItem>
-                  {semesterOptions.map((semester) => (
-                    <SelectItem key={semester} value={semester}>
-                      {semester}
-                    </SelectItem>
-                  ))}
+                  {semesterOptions.map((semester) => <SelectItem key={semester} value={semester}>{semester}</SelectItem>)}
                 </SelectContent>
               </Select>
 
-              <div className="inline-flex w-full rounded-md border bg-slate-50 p-1 sm:w-auto" aria-label="มุมมองตารางเรียน">
-                <Button type="button" variant={viewMode === "grid" ? "secondary" : "ghost"} size="sm" className="h-8 flex-1 sm:flex-none" onClick={() => setViewMode("grid")}>
+              <div className="inline-flex w-full rounded-xl border bg-card p-1 xl:w-auto" aria-label={t("app.viewLabel")}>
+                <Button type="button" variant={viewMode === "grid" ? "secondary" : "ghost"} size="sm" className="h-8 flex-1 xl:flex-none" onClick={() => setViewMode("grid")}>
                   <Grid3X3 className="h-4 w-4" /> {t("app.viewGrid")}
                 </Button>
-                <Button type="button" variant={viewMode === "list" ? "secondary" : "ghost"} size="sm" className="h-8 flex-1 sm:flex-none" onClick={() => setViewMode("list")}>
+                <Button type="button" variant={viewMode === "list" ? "secondary" : "ghost"} size="sm" className="h-8 flex-1 xl:flex-none" onClick={() => setViewMode("list")}>
                   <List className="h-4 w-4" /> {t("app.viewList")}
                 </Button>
               </div>
 
-              <ExportButton targetId="timetable-export" format={imageFormat} onBeforeExport={() => setExportDate(formatExportDate(dayjs(), language))} />
-              <div className="inline-flex rounded-md border bg-slate-50 p-1" aria-label="history">
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={undo} disabled={!canUndo} aria-label={t("history.undo")} title={t("history.undo")}>
-                  <Undo2 className="h-4 w-4" />
-                </Button>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={redo} disabled={!canRedo} aria-label={t("history.redo")} title={t("history.redo")}>
-                  <Redo2 className="h-4 w-4" />
+              <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+                <div className="inline-flex rounded-xl border bg-card p-1" aria-label={t("history.label")}>
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={undo} disabled={!canUndo} aria-label={t("history.undo")} title={t("history.undo")}><Undo2 className="h-4 w-4" /></Button>
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={redo} disabled={!canRedo} aria-label={t("history.redo")} title={t("history.redo")}><Redo2 className="h-4 w-4" /></Button>
+                </div>
+                <ExportButton targetId="timetable-export" format={imageFormat} variant="outline" onBeforeExport={() => setExportDate(formatExportDate(dayjs(), language))} />
+                <Button type="button" className="flex-1 sm:flex-none" onClick={() => openNewForm()}>
+                  <Plus className="h-4 w-4" />
+                  {t("app.addCourse")}
                 </Button>
               </div>
-              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setToolsOpen(true)}>
-                <SlidersHorizontal className="h-4 w-4" />
-                {t("app.tools")}
-              </Button>
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full sm:w-auto font-semibold" 
-                onClick={() => updateSettings({ ...settings, language: language === "th" ? "en" : "th" })}
-              >
-                {language === "th" ? "EN" : "TH"}
-              </Button>
             </div>
           </div>
         </header>
 
-        {backupDue ? <div className="no-print flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:flex-row sm:items-center sm:justify-between"><div><strong>{language === "en" ? "Backup recommended" : "แนะนำให้สำรองข้อมูล"}</strong><p className="text-amber-800">{language === "en" ? "Your data is stored on this browser. Save or share a backup to protect it when changing devices." : "ข้อมูลอยู่ในเบราว์เซอร์เครื่องนี้ ควรบันทึกหรือแชร์ไฟล์สำรองก่อนเปลี่ยนเครื่อง"}</p></div><Button variant="outline" className="border-amber-300 bg-white" onClick={exportJson}><FileDown className="h-4 w-4" />{language === "en" ? "Back up now" : "สำรองตอนนี้"}</Button></div> : null}
+        {backupDue ? (
+          <div className="no-print flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3.5 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-xl bg-amber-500/15 p-2 text-amber-700 dark:text-amber-300"><HardDrive className="h-4 w-4" /></div>
+              <div><strong className="text-foreground">{t("backup.recommended")}</strong><p className="mt-0.5 text-muted-foreground">{t("backup.description")}</p></div>
+            </div>
+            <Button variant="outline" className="border-amber-500/30 bg-card" onClick={exportJson}><FileDown className="h-4 w-4" />{t("backup.now")}</Button>
+          </div>
+        ) : null}
 
-        <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur no-print">
+        <section className="no-print rounded-2xl border bg-card/95 p-4 shadow-sm backdrop-blur sm:p-5">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="rounded-xl bg-primary/10 p-2 text-primary"><Search className="h-4 w-4" /></div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground">{t("results.filterTitle")}</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t("results.filterDescription")}</p>
+            </div>
+          </div>
           <div className="grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
             <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-[1.35fr_0.65fr]">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">{t("filter.searchLabel")}</Label>
+                  <Label className="text-sm font-semibold">{t("filter.searchLabel")}</Label>
                   <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
@@ -391,7 +433,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setSearchTerm("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                         aria-label={t("filter.clearSearch")}
                       >
                         <X className="h-4 w-4" />
@@ -401,7 +443,7 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">{t("filter.sortLabel")}</Label>
+                  <Label className="text-sm font-semibold">{t("filter.sortLabel")}</Label>
                   <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
                     <SelectTrigger className="h-11 w-full" aria-label={t("filter.sortLabel")}>
                       <SelectValue />
@@ -418,9 +460,9 @@ export default function Home() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-700">{t("filter.filterDay")}</p>
+                  <p className="text-sm font-semibold text-foreground">{t("filter.filterDay")}</p>
                   {selectedDays.length > 0 ? (
-                    <button type="button" className="text-xs font-medium text-slate-500 hover:text-slate-700" onClick={() => setSelectedDays([])}>
+                    <button type="button" className="text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => setSelectedDays([])}>
                       {t("filter.clearDay")}
                     </button>
                   ) : null}
@@ -443,8 +485,8 @@ export default function Home() {
                           className={cn(
                             "rounded-full border px-3 py-1.5 text-sm font-medium transition",
                             isSelected
-                              ? "border-primary bg-primary text-white shadow-sm"
-                              : "border-slate-200 bg-slate-50 text-slate-700 hover:border-primary hover:bg-sky-50 hover:text-primary"
+                              ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                              : "border-border bg-muted/60 text-muted-foreground hover:border-primary hover:text-primary"
                           )}
                         >
                           {language === "en" ? weekDays.find((item) => item.key === day)?.shortLabelEn : weekDays.find((item) => item.key === day)?.shortLabelTh ?? dayLabel}
@@ -452,16 +494,16 @@ export default function Home() {
                       );
                     })
                   ) : (
-                    <p className="text-sm text-slate-500">{t("filter.noDayData")}</p>
+                    <p className="text-sm text-muted-foreground">{t("filter.noDayData")}</p>
                   )}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-slate-700">{t("filter.filterInstructor")}</p>
+                  <p className="text-sm font-semibold text-foreground">{t("filter.filterInstructor")}</p>
                   {selectedInstructors.length > 0 ? (
-                    <button type="button" className="text-xs font-medium text-slate-500 hover:text-slate-700" onClick={() => setSelectedInstructors([])}>
+                    <button type="button" className="text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => setSelectedInstructors([])}>
                       {t("filter.clearInstructor")}
                     </button>
                   ) : null}
@@ -482,8 +524,8 @@ export default function Home() {
                           className={cn(
                             "max-w-full rounded-full border px-3 py-1.5 text-left text-sm font-medium transition",
                             isSelected
-                              ? "border-slate-900 bg-slate-900 text-white shadow-sm"
-                              : "border-slate-200 bg-white text-slate-700 hover:border-slate-900 hover:text-slate-900"
+                              ? "border-foreground bg-foreground text-background shadow-sm"
+                              : "border-border bg-card text-muted-foreground hover:border-foreground hover:text-foreground"
                           )}
                           title={instructor}
                         >
@@ -492,20 +534,20 @@ export default function Home() {
                       );
                     })
                   ) : (
-                    <p className="text-sm text-slate-500">{t("filter.noInstructorData")}</p>
+                    <p className="text-sm text-muted-foreground">{t("filter.noInstructorData")}</p>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-start gap-3 rounded-lg bg-white p-3 shadow-sm">
-                <div className="rounded-full bg-sky-100 p-2 text-sky-700">
+            <div className="flex flex-col gap-3 rounded-xl border bg-muted/45 p-4">
+              <div className="flex items-start gap-3 rounded-xl bg-card p-3 shadow-sm">
+                <div className="rounded-full bg-primary/10 p-2 text-primary">
                   <Search className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{t("results.coursesCount", { count: filteredClasses.length })}</p>
-                  <p className="text-xs text-slate-500">{t("results.filteredSubtext")}</p>
+                  <p className="text-sm font-semibold text-foreground">{t("results.coursesCount", { count: filteredClasses.length })}</p>
+                  <p className="text-xs text-muted-foreground">{t("results.filteredSubtext")}</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -533,21 +575,21 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 no-print">
-          <Metric label={t("metrics.courses")} value={safeClasses.length.toString()} />
-          <Metric label={t("metrics.overlaps")} value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
-          <Metric label={language === "en" ? "Total credits" : "หน่วยกิตรวม"} value={safeClasses.reduce((sum, item) => sum + (item.credits ?? 0), 0).toString()} />
-          <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+        <section className="no-print grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Metric icon={<CalendarDays className="h-5 w-5" />} label={t("metrics.courses")} value={safeClasses.length.toString()} />
+          <Metric icon={<TriangleAlert className="h-5 w-5" />} label={t("metrics.overlaps")} value={totalOverlaps.toString()} tone={totalOverlaps > 0 ? "warning" : "success"} />
+          <Metric icon={<BookOpen className="h-5 w-5" />} label={t("metrics.credits")} value={safeClasses.reduce((sum, item) => sum + (item.credits ?? 0), 0).toString()} />
+          <div className="flex items-center gap-3 rounded-2xl border bg-card px-3.5 py-3 shadow-sm">
+            <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400"><CheckCircle2 className="h-5 w-5" /></div>
             <div className="min-w-0">
               <p className="text-sm font-semibold">{t("metrics.autoSaved")}</p>
-              <p className="text-xs text-slate-500">{t("metrics.autoSavedDesc")}</p>
+              <p className="truncate text-xs text-muted-foreground">{t("metrics.autoSavedDesc")}</p>
             </div>
           </div>
         </section>
 
         <div className="relative">
-          <div className={cn(viewMode === "grid" ? "absolute left-[-10000px] top-0 md:static" : "absolute left-[-10000px] top-0 w-max")}>
+          <div className={cn(viewMode === "grid" ? "block" : "absolute left-[-10000px] top-0 w-max")}>
             <TimetableGrid
               classes={filteredClasses}
               startTime={settings.startTime}
@@ -563,7 +605,7 @@ export default function Home() {
             />
           </div>
 
-          <div className={cn("block", viewMode === "grid" ? "md:hidden" : "md:block")}>
+          <div className={cn(viewMode === "list" ? "block" : "hidden")}>
             <TimetableListView classes={filteredClasses} visibleDays={settings.visibleDays} onView={setSelectedClass} />
           </div>
         </div>
@@ -605,19 +647,19 @@ export default function Home() {
             <DialogTitle>{t("tools.title")}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-5 md:grid-cols-2">
-            <section className="rounded-lg border bg-slate-50/70 p-4">
+            <section className="rounded-xl border bg-muted/40 p-4">
               <div className="mb-4 flex items-center gap-2 font-semibold">
                 <HardDrive className="h-4 w-4" />
                 {t("tools.settingsSection")}
               </div>
               <SettingsForm settings={settings} onChange={updateSettings} semesterOptions={semesterOptions} />
             </section>
-            <section className="rounded-lg border bg-slate-50/70 p-4">
+            <section className="rounded-xl border bg-muted/40 p-4">
               <div className="mb-1 flex items-center gap-2 font-semibold">
                 <FileDown className="h-4 w-4" />
                 {t("tools.exportSection")}
               </div>
-              <p className="mb-4 text-sm text-slate-500">{t("tools.exportDesc")}</p>
+              <p className="mb-4 text-sm text-muted-foreground">{t("tools.exportDesc")}</p>
               <div className="space-y-3">
                 <Button onClick={() => openNewForm()} className="w-full justify-start">
                   <Plus className="h-4 w-4" />
@@ -625,10 +667,10 @@ export default function Home() {
                 </Button>
                 <Button variant="outline" onClick={() => { setToolsOpen(false); setBulkImportOpen(true); }} className="w-full justify-start">
                   <FileSpreadsheet className="h-4 w-4" />
-                  {language === "en" ? "Import CSV / text" : "นำเข้า CSV / ข้อความ"}
+                  {t("tools.importText")}
                 </Button>
                 <Select value={imageFormat} onValueChange={(value) => setImageFormat(value as ImageFormat)}>
-                  <SelectTrigger aria-label="รูปแบบไฟล์ภาพ">
+                  <SelectTrigger aria-label={t("tools.imageFormat")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -653,21 +695,21 @@ export default function Home() {
                 </div>
                 <Button variant="outline" onClick={() => void shareBackup()} className="w-full justify-start">
                   <Share2 className="h-4 w-4" />
-                  {language === "en" ? "Share backup" : "แชร์ไฟล์สำรอง"}
+                  {t("tools.shareBackup")}
                 </Button>
                 <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={importJson} />
                 {importError ? <p className="text-sm text-destructive">{importError}</p> : null}
-                <div className="rounded-lg border bg-white p-3 text-sm">
-                  <div className="font-semibold">{language === "en" ? "Current schedule plan" : "ชุดตารางปัจจุบัน"}</div>
+                <div className="rounded-xl border bg-card p-3 text-sm">
+                  <div className="font-semibold">{t("tools.currentPlan")}</div>
                   <Input className="mt-2" value={plans.find((plan) => plan.id === activePlanId)?.name ?? ""} onChange={(event) => renamePlan(activePlanId, event.target.value)} />
                   <Button className="mt-2 w-full" variant="ghost" disabled={plans.length <= 1} onClick={() => deletePlan(activePlanId)}>
                     <Trash2 className="h-4 w-4" />
-                    {language === "en" ? "Delete this plan" : "ลบชุดตารางนี้"}
+                    {t("tools.deletePlan")}
                   </Button>
                   <div className="mt-3 space-y-1 border-t pt-3">
-                    {plans.map((plan) => <button type="button" key={plan.id} onClick={() => switchPlan(plan.id)} className={cn("flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs", plan.id === activePlanId ? "bg-sky-50 text-sky-900" : "hover:bg-slate-50")}>
+                    {plans.map((plan) => <button type="button" key={plan.id} onClick={() => switchPlan(plan.id)} className={cn("flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-xs", plan.id === activePlanId ? "bg-primary/10 text-primary" : "hover:bg-muted")}>
                       <span className="truncate font-semibold">{plan.name}</span>
-                      <span className="text-slate-500">{plan.classes.length} {language === "en" ? "courses" : "วิชา"} · {plan.classes.reduce((sum, item) => sum + (item.credits ?? 0), 0)} {language === "en" ? "credits" : "หน่วยกิต"} · {countOverlaps(plan.classes)} {language === "en" ? "conflicts" : "ชน"}</span>
+                      <span className="shrink-0 text-muted-foreground">{t("tools.planSummary", { courses: plan.classes.length, credits: plan.classes.reduce((sum, item) => sum + (item.credits ?? 0), 0), conflicts: countOverlaps(plan.classes) })}</span>
                     </button>)}
                   </div>
                 </div>
@@ -694,7 +736,7 @@ export default function Home() {
         onOpenChange={setBulkImportOpen}
         onImport={(items) => {
           addClasses(items);
-          toast({ variant: "success", title: language === "en" ? "Courses imported" : "นำเข้ารายวิชาแล้ว", description: `${items.length}` });
+          toast({ variant: "success", title: t("toast.coursesImported"), description: t("results.coursesCount", { count: items.length }) });
         }}
       />
 
@@ -703,7 +745,7 @@ export default function Home() {
           <DialogHeader>
             <DialogTitle>{t("dialog.deleteConfirm")}</DialogTitle>
           </DialogHeader>
-          <div className="flex gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-900">
+          <div className="flex gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">
             <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0" />
             <p>
               {t("dialog.deleteWarning", { code: classToDelete?.courseCode ?? "", name: classToDelete?.courseName ?? "" })}
@@ -725,7 +767,7 @@ export default function Home() {
           <DialogHeader>
             <DialogTitle>{t("dialog.resetConfirm")}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-muted-foreground">
             {t("dialog.resetWarning")}
           </p>
           <div className="flex justify-end gap-2">
@@ -737,10 +779,10 @@ export default function Home() {
               onClick={() => {
                 resetSample();
                 setResetConfirmOpen(false);
-                toast({ variant: "success", title: "คืนค่าข้อมูลตัวอย่างแล้ว", description: "ตารางและการตั้งค่ากลับสู่ค่าเริ่มต้น" });
+                toast({ variant: "success", title: t("dialog.resetSuccess"), description: t("dialog.resetSuccessDesc") });
               }}
             >
-              คืนค่าข้อมูลตัวอย่าง
+              {t("dialog.resetBtn")}
             </Button>
           </div>
         </DialogContent>
@@ -835,30 +877,30 @@ function SettingsForm({
           </Select>
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label={language === "en" ? "Semester starts" : "วันเปิดภาคเรียน"}>
+          <Field label={t("settings.semesterStart")}>
             <Input type="date" value={settings.semesterStartDate ?? ""} onChange={(event) => onChange({ ...settings, semesterStartDate: event.target.value })} />
           </Field>
-          <Field label={language === "en" ? "Semester ends" : "วันปิดภาคเรียน"}>
+          <Field label={t("settings.semesterEnd")}>
             <Input type="date" value={settings.semesterEndDate ?? ""} onChange={(event) => onChange({ ...settings, semesterEndDate: event.target.value })} />
           </Field>
         </div>
-        {settings.semesterStartDate && settings.semesterEndDate && settings.semesterEndDate < settings.semesterStartDate ? <p className="text-xs font-medium text-destructive">{language === "en" ? "End date must be after start date" : "วันปิดภาคเรียนต้องอยู่หลังวันเปิดภาคเรียน"}</p> : null}
-        <Field label={language === "en" ? "Days shown on timetable" : "วันที่แสดงในตาราง"}>
-          <div className="flex flex-wrap gap-2 rounded-md border bg-white p-2">
+        {settings.semesterStartDate && settings.semesterEndDate && settings.semesterEndDate < settings.semesterStartDate ? <p className="text-xs font-medium text-destructive">{t("settings.dateRangeError")}</p> : null}
+        <Field label={t("settings.visibleDays")}>
+          <div className="flex flex-wrap gap-2 rounded-xl border bg-card p-2">
             {weekDays.map((day) => {
               const selected = (settings.visibleDays ?? []).includes(day.key);
               return <button key={day.key} type="button" aria-pressed={selected} onClick={() => {
                 const visibleDays = selected ? (settings.visibleDays ?? []).filter((item) => item !== day.key) : [...(settings.visibleDays ?? []), day.key];
                 if (visibleDays.length) onChange({ ...settings, visibleDays });
-              }} className={cn("rounded border px-2 py-1 text-xs font-semibold", selected ? "border-primary bg-primary text-white" : "bg-white text-slate-600")}>{language === "en" ? day.shortLabelEn : day.shortLabelTh}</button>;
+              }} className={cn("rounded-lg border px-2 py-1 text-xs font-semibold transition", selected ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:border-primary/40")}>{language === "en" ? day.shortLabelEn : day.shortLabelTh}</button>;
             })}
           </div>
         </Field>
-        <Field label={language === "en" ? "No-class dates" : "วันงดเรียน"}>
+        <Field label={t("settings.excludedDates")}>
           <div className="flex gap-2"><Input type="date" value={excludedDate} onChange={(event) => setExcludedDate(event.target.value)} /><Button type="button" variant="secondary" size="icon" disabled={!excludedDate} onClick={() => { onChange({ ...settings, excludedDates: [...(settings.excludedDates ?? []), excludedDate] }); setExcludedDate(""); }}><Plus className="h-4 w-4" /></Button></div>
-          {(settings.excludedDates ?? []).map((date) => <div key={date} className="mt-2 flex items-center justify-between rounded border bg-white px-2 py-1 text-xs"><span>{date}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => onChange({ ...settings, excludedDates: (settings.excludedDates ?? []).filter((item) => item !== date) })}><X className="h-3.5 w-3.5" /></Button></div>)}
+          {(settings.excludedDates ?? []).map((date) => <div key={date} className="mt-2 flex items-center justify-between rounded-lg border bg-card px-2 py-1 text-xs"><span>{date}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" aria-label={t("common.remove")} onClick={() => onChange({ ...settings, excludedDates: (settings.excludedDates ?? []).filter((item) => item !== date) })}><X className="h-3.5 w-3.5" /></Button></div>)}
         </Field>
-        <Field label={language === "en" ? "Make-up class dates" : "วันเรียนชดเชย"}>
+        <Field label={t("settings.makeupDates")}>
           <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
             <Input type="date" value={makeupDate} onChange={(event) => setMakeupDate(event.target.value)} />
             <Select value={makeupDay} onValueChange={(day) => setMakeupDay(day as WeekDay)}>
@@ -867,14 +909,12 @@ function SettingsForm({
             </Select>
             <Button type="button" variant="secondary" size="icon" disabled={!makeupDate} onClick={() => { onChange({ ...settings, makeupDays: [...(settings.makeupDays ?? []), { date: makeupDate, followsDay: makeupDay }] }); setMakeupDate(""); }}><Plus className="h-4 w-4" /></Button>
           </div>
-          {(settings.makeupDays ?? []).map((entry, index) => <div key={`${entry.date}-${index}`} className="mt-2 flex items-center justify-between rounded border bg-white px-2 py-1 text-xs"><span>{entry.date} → {entry.followsDay}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => onChange({ ...settings, makeupDays: (settings.makeupDays ?? []).filter((_, itemIndex) => itemIndex !== index) })}><X className="h-3.5 w-3.5" /></Button></div>)}
+          {(settings.makeupDays ?? []).map((entry, index) => { const day = weekDays.find((item) => item.key === entry.followsDay); return <div key={`${entry.date}-${index}`} className="mt-2 flex items-center justify-between rounded-lg border bg-card px-2 py-1 text-xs"><span>{entry.date} → {language === "en" ? day?.labelEn : day?.labelTh}</span><Button type="button" variant="ghost" size="icon" className="h-7 w-7" aria-label={t("common.remove")} onClick={() => onChange({ ...settings, makeupDays: (settings.makeupDays ?? []).filter((_, itemIndex) => itemIndex !== index) })}><X className="h-3.5 w-3.5" /></Button></div>; })}
         </Field>
       </div>
 
-      <div className="rounded-md border border-sky-100 bg-sky-50 p-3 text-sm text-sky-900">
-        {language === "en"
-          ? `The timetable and exported files use ${settings.startTime}-${settings.endTime}`
-          : `ตารางและไฟล์ส่งออกใช้ช่วงเวลา ${settings.startTime}-${settings.endTime}`}
+      <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 text-sm text-foreground">
+        {t("settings.timeNote", { start: settings.startTime, end: settings.endTime })}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -923,8 +963,8 @@ function SettingsForm({
         {t("settings.regenerateSlots")}
       </Button>
 
-      <details className="group rounded-lg border bg-white p-3">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">{t("settings.customSlots")}</summary>
+      <details className="group rounded-xl border bg-card p-3">
+        <summary className="cursor-pointer text-sm font-semibold text-foreground">{t("settings.customSlots")}</summary>
         <div className="mt-3 space-y-2">
           <div className="flex gap-2">
             <Input type="time" value={newSlot} onChange={(event) => setNewSlot(event.target.value)} />
@@ -934,15 +974,15 @@ function SettingsForm({
           </div>
           <div className="max-h-72 space-y-2 overflow-auto pr-1">
             {slots.map((slot, index) => (
-              <div key={`${slot}-${index}`} className="flex items-center gap-2 rounded-md border bg-slate-50 p-2">
+              <div key={`${slot}-${index}`} className="flex items-center gap-2 rounded-xl border bg-muted/50 p-2">
                 <Input type="time" value={slot} onChange={(event) => updateSlot(index, event.target.value)} className="h-8" />
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveSlot(index, -1)} disabled={index === 0} aria-label="เลื่อนช่วงเวลาขึ้น">
+                <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveSlot(index, -1)} disabled={index === 0} aria-label={t("settings.moveSlotUp")}>
                   <ArrowUp className="h-4 w-4" />
                 </Button>
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveSlot(index, 1)} disabled={index === slots.length - 1} aria-label="เลื่อนช่วงเวลาลง">
+                <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveSlot(index, 1)} disabled={index === slots.length - 1} aria-label={t("settings.moveSlotDown")}>
                   <ArrowDown className="h-4 w-4" />
                 </Button>
-                <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setSlots(slots.filter((_, slotIndex) => slotIndex !== index))} disabled={slots.length <= 1} aria-label="ลบช่วงเวลา">
+                <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setSlots(slots.filter((_, slotIndex) => slotIndex !== index))} disabled={slots.length <= 1} aria-label={t("settings.deleteSlot")}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -978,13 +1018,19 @@ function Field({
 }
 
 /** แสดงตัวเลขสรุปหนึ่งรายการพร้อมโทนสีตามสถานะ */
-function Metric({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "success" | "warning" }) {
+function Metric({ icon, label, value, tone = "default" }: { icon: React.ReactNode; label: string; value: string; tone?: "default" | "success" | "warning" }) {
+  const toneClass = tone === "warning"
+    ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+    : tone === "success"
+      ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+      : "bg-primary/10 text-primary";
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-      <div className={`text-lg font-semibold ${tone === "warning" ? "text-amber-700" : tone === "success" ? "text-emerald-700" : "text-slate-900"}`}>
-        {value}
+    <div className="flex items-center gap-3 rounded-2xl border bg-card px-3.5 py-3 shadow-sm">
+      <div className={cn("rounded-xl p-2", toneClass)}>{icon}</div>
+      <div className="min-w-0">
+        <div className="text-lg font-bold leading-none text-foreground">{value}</div>
+        <div className="mt-1 truncate text-xs text-muted-foreground">{label}</div>
       </div>
-      <div className="text-xs text-slate-500">{label}</div>
     </div>
   );
 }
@@ -1078,9 +1124,10 @@ function sortAndFilterClasses(
 }
 
 /** สร้างรายการภาคเรียนรอบปีปัจจุบัน และคงค่าที่ผู้ใช้บันทึกไว้ */
-function buildSemesterOptions(current?: string) {
+function buildSemesterOptions(current: string | undefined, language: "th" | "en") {
   const buddhistYear = new Date().getFullYear() + 543;
-  const options = [`1/${buddhistYear}`, `2/${buddhistYear}`, `ฤดูร้อน/${buddhistYear}`, `1/${buddhistYear + 1}`, `2/${buddhistYear + 1}`];
+  const summer = language === "en" ? "Summer" : "ฤดูร้อน";
+  const options = [`1/${buddhistYear}`, `2/${buddhistYear}`, `${summer}/${buddhistYear}`, `1/${buddhistYear + 1}`, `2/${buddhistYear + 1}`];
   return current && !options.includes(current) ? [current, ...options] : options;
 }
 

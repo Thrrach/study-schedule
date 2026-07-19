@@ -18,7 +18,7 @@ interface ExportButtonProps {
 
 /** ส่งออกองค์ประกอบตารางที่ระบุเป็นภาพ PNG หรือ JPEG */
 export function ExportButton({ targetId, format, onBeforeExport, className, variant = "secondary" }: ExportButtonProps) {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
@@ -68,7 +68,7 @@ export function ExportButton({ targetId, format, onBeforeExport, className, vari
       link.remove();
     } catch (error) {
       console.error("Could not export timetable image", error);
-      setExportError(language === "en" ? "Export failed. Please try again." : "ส่งออกรูปไม่สำเร็จ กรุณาลองอีกครั้ง");
+      setExportError(t("export.failed"));
     } finally {
       delete node.dataset.exporting;
       setExporting(false);
@@ -85,7 +85,7 @@ export function ExportButton({ targetId, format, onBeforeExport, className, vari
         aria-label={`${t("export.button")} ${format.toUpperCase()}`}
       >
         {exporting ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-        {exporting ? t("export.exporting") : `${language === "en" ? "Export" : "ส่งออก"} ${format.toUpperCase()}`}
+        {exporting ? t("export.exporting") : `${t("app.export")} ${format.toUpperCase()}`}
       </Button>
       {exportError ? (
         <p className="absolute -bottom-6 left-0 right-0 text-center text-xs font-medium text-destructive" role="alert">

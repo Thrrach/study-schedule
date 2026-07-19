@@ -17,7 +17,7 @@ interface SubjectDetailDialogProps {
 /** แสดงรายละเอียดทั้งหมดของรายวิชาที่เลือกใน dialog */
 export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailDialogProps) {
   const { t, language } = useTranslation();
-  const theme = item ? getSubjectTheme(item) : null;
+  const theme = item ? getSubjectTheme(item, language) : null;
   const dayLabels = item
     ? safeDays(item.days)
         .map((day) => language === "en" ? weekDays.find((weekDay) => weekDay.key === day)?.labelEn : weekDays.find((weekDay) => weekDay.key === day)?.labelTh ?? day)
@@ -66,28 +66,28 @@ export function SubjectDetailDialog({ item, open, onOpenChange }: SubjectDetailD
               <Detail icon={<MapPin className="h-4 w-4" />} label={t("form.room")} value={item.room || "-"} />
               <Detail icon={<CalendarDays className="h-4 w-4" />} label={t("form.days")} value={dayLabels.join(", ") || "-"} />
               <Detail icon={<Clock3 className="h-4 w-4" />} label={t("filter.sortTime")} value={`${item.startTime} - ${item.endTime}`} />
-              <Detail label={language === "en" ? "Credits" : "หน่วยกิต"} value={String(item.credits ?? 0)} />
-              <Detail label={language === "en" ? "Class type" : "ประเภทคาบ"} value={item.classType ?? "lecture"} />
-              <Detail label={language === "en" ? "Status" : "สถานะ"} value={item.status ?? "planned"} />
-              <Detail label={language === "en" ? "Midterm / Final" : "กลางภาค / ปลายภาค"} value={`${item.midtermDate || "-"} / ${item.finalDate || "-"}`} />
+              <Detail label={t("dialog.credits")} value={String(item.credits ?? 0)} />
+              <Detail label={t("dialog.classType")} value={t(`form.type${capitalize(item.classType ?? "lecture")}` as "form.typeLecture")} />
+              <Detail label={t("dialog.status")} value={t(`form.status${capitalize(item.status ?? "planned")}` as "form.statusPlanned")} />
+              <Detail label={t("dialog.exams")} value={`${item.midtermDate || "-"} / ${item.finalDate || "-"}`} />
             </dl>
 
-            {item.onlineUrl ? <a className="block rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm font-semibold text-sky-800 hover:bg-sky-100" href={item.onlineUrl} target="_blank" rel="noreferrer">{language === "en" ? "Open online classroom" : "เปิดห้องเรียนออนไลน์"}</a> : null}
+            {item.onlineUrl ? <a className="block rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm font-semibold text-primary hover:bg-primary/10" href={item.onlineUrl} target="_blank" rel="noreferrer">{t("dialog.openOnline")}</a> : null}
 
             <div className="flex flex-wrap gap-2">
               {shortDayLabels.map((label) => (
-                <span key={label} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                <span key={label} className="rounded-full border bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
                   {label}
                 </span>
               ))}
             </div>
 
-            <div className="rounded-lg border bg-slate-50 p-4">
-              <dt className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <div className="rounded-xl border bg-muted/50 p-4">
+              <dt className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <StickyNote className="h-4 w-4" />
                 {t("dialog.detailNote")}
               </dt>
-              <dd className="mt-2 text-sm leading-6 text-slate-600">{item.note || t("dialog.noNote")}</dd>
+              <dd className="mt-2 text-sm leading-6 text-muted-foreground">{item.note || t("dialog.noNote")}</dd>
             </div>
           </div>
         ) : null}
@@ -107,12 +107,16 @@ function Detail({
   value: string;
 }) {
   return (
-    <div className="rounded-lg border bg-white p-3">
-      <dt className="flex items-center gap-2 text-xs font-semibold uppercase text-slate-500">
+    <div className="rounded-xl border bg-card p-3">
+      <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {icon}
         {label}
       </dt>
-      <dd className="mt-1 break-words text-sm font-medium text-slate-900">{value}</dd>
+      <dd className="mt-1 break-words text-sm font-semibold text-foreground">{value}</dd>
     </div>
   );
+}
+
+function capitalize(value: string) {
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }

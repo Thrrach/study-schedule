@@ -122,20 +122,20 @@ export function ClassForm({
         if (!hasErrors) onSubmit({ ...value, days: selectedDays });
       }}
     >
-      <p className="-mt-1 text-sm text-slate-500">{language === "en" ? "Fill in the main information first, then add instructor, room, and notes later." : "กรอกข้อมูลหลักก่อน แล้วค่อยเติมผู้สอน ห้อง และหมายเหตุภายหลังได้"}</p>
+      <p className="-mt-1 text-sm text-muted-foreground">{t("form.description")}</p>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Field label={t("form.code")} error={submitted && errors.courseCode ? t("form.required") : undefined}>
-          <Input autoFocus value={value.courseCode} onChange={(event) => update("courseCode", event.target.value)} placeholder={language === "en" ? "e.g., 344-211" : "เช่น 344-211"} />
+          <Input autoFocus value={value.courseCode} onChange={(event) => update("courseCode", event.target.value)} placeholder={t("form.codePlaceholder")} />
         </Field>
         <Field label={t("form.name")} error={submitted && errors.courseName ? t("form.required") : undefined}>
-          <Input value={value.courseName} onChange={(event) => update("courseName", event.target.value)} placeholder={language === "en" ? "e.g., Database Systems" : "เช่น ระบบฐานข้อมูล"} />
+          <Input value={value.courseName} onChange={(event) => update("courseName", event.target.value)} placeholder={t("form.namePlaceholder")} />
         </Field>
         <Field label={t("form.section")} error={submitted && errors.section ? t("form.required") : undefined}>
           <Input value={value.section} onChange={(event) => update("section", event.target.value)} placeholder="01" />
         </Field>
-        <Field label={t("form.days")} error={submitted && errors.days ? (language === "en" ? "Select at least 1 day" : "เลือกอย่างน้อย 1 วัน") : undefined}>
-          <div className="flex flex-wrap gap-2 rounded-md border bg-slate-50 p-2">
+        <Field label={t("form.days")} error={submitted && errors.days ? t("form.selectDay") : undefined}>
+          <div className="flex flex-wrap gap-2 rounded-xl border bg-muted/50 p-2">
             {weekDays.map((day) => (
               <button
                 key={day.key}
@@ -147,7 +147,7 @@ export function ClassForm({
                     : [...selectedDays, day.key];
                   update("days", days as WeekDay[]);
                 }}
-                className={`rounded-md border px-3 py-2 text-sm font-medium transition ${selectedDays.includes(day.key) ? "border-primary bg-primary text-white" : "border-slate-200 bg-white text-slate-700 hover:border-primary/40 hover:bg-sky-50"}`}
+                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${selectedDays.includes(day.key) ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-primary"}`}
               >
                 {language === "en" ? day.shortLabelEn : day.shortLabelTh}
               </button>
@@ -156,7 +156,7 @@ export function ClassForm({
         </Field>
         <Field
           label={t("form.startTime")}
-          error={submitted && (errors.startTime || errors.range) ? (language === "en" ? `Select within ${timetableStart}–${timetableEnd}` : `เลือกภายใน ${timetableStart}–${timetableEnd}`) : undefined}
+          error={submitted && (errors.startTime || errors.range) ? t("form.timeRange", { start: timetableStart, end: timetableEnd }) : undefined}
         >
           <Select value={value.startTime} onValueChange={updateStartTime}>
             <SelectTrigger>
@@ -173,7 +173,7 @@ export function ClassForm({
         </Field>
         <Field
           label={t("form.endTime")}
-          error={submitted && (errors.endTime || errors.time || errors.range) ? (language === "en" ? "Must be after start time and within timetable range" : "ต้องอยู่หลังเวลาเริ่มและไม่เกินช่วงตาราง") : undefined}
+          error={submitted && (errors.endTime || errors.time || errors.range) ? t("form.endTimeError") : undefined}
         >
           <Select value={value.endTime} onValueChange={(next) => update("endTime", next)}>
             <SelectTrigger>
@@ -188,15 +188,15 @@ export function ClassForm({
             </SelectContent>
           </Select>
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <Clock3 className="h-3.5 w-3.5 text-slate-400" />
+            <Clock3 className="h-3.5 w-3.5 text-muted-foreground" />
             {[50, 60, 120, 180].map((minutes) => (
               <button
                 key={minutes}
                 type="button"
                 onClick={() => setDuration(minutes)}
-                className="rounded border bg-white px-2 py-1 text-xs text-slate-600 hover:border-primary/40 hover:text-primary"
+                className="rounded-lg border bg-card px-2 py-1 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-primary"
               >
-                {minutes < 60 ? (language === "en" ? `${minutes} mins` : `${minutes} นาที`) : (language === "en" ? `${minutes / 60} hrs` : `${minutes / 60} ชม.`)}
+                {minutes < 60 ? t("form.minutes", { count: minutes }) : t("form.hours", { count: minutes / 60 })}
               </button>
             ))}
           </div>
@@ -205,62 +205,62 @@ export function ClassForm({
 
       <ColorPicker value={value.color} onChange={(color) => update("color", color)} />
 
-      <details className="rounded-lg border bg-slate-50/70 p-3">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">{language === "en" ? "Additional Information (Optional)" : "ข้อมูลเพิ่มเติม (ไม่บังคับ)"}</summary>
+      <details className="rounded-xl border bg-muted/35 p-3">
+        <summary className="cursor-pointer text-sm font-semibold text-foreground">{t("form.additional")}</summary>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <Field label={language === "en" ? "Credits" : "หน่วยกิต"}>
+          <Field label={t("form.credits")}>
             <Input type="number" min={0} max={30} step={0.5} value={value.credits ?? 0} onChange={(event) => update("credits", Number(event.target.value))} />
           </Field>
-          <Field label={language === "en" ? "Class type" : "ประเภทคาบ"}>
+          <Field label={t("form.classType")}>
             <Select value={value.classType ?? "lecture"} onValueChange={(classType) => update("classType", classType as ClassPayload["classType"])}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="lecture">Lecture</SelectItem>
-                <SelectItem value="lab">Lab</SelectItem>
-                <SelectItem value="tutorial">Tutorial</SelectItem>
-                <SelectItem value="online">Online</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="lecture">{t("form.typeLecture")}</SelectItem>
+                <SelectItem value="lab">{t("form.typeLab")}</SelectItem>
+                <SelectItem value="tutorial">{t("form.typeTutorial")}</SelectItem>
+                <SelectItem value="online">{t("form.typeOnline")}</SelectItem>
+                <SelectItem value="other">{t("form.typeOther")}</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label={language === "en" ? "Enrollment status" : "สถานะการลงทะเบียน"}>
+          <Field label={t("form.enrollmentStatus")}>
             <Select value={value.status ?? "planned"} onValueChange={(status) => update("status", status as ClassPayload["status"])}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="planned">{language === "en" ? "Planned" : "กำลังวางแผน"}</SelectItem>
-                <SelectItem value="enrolled">{language === "en" ? "Enrolled" : "ลงทะเบียนแล้ว"}</SelectItem>
-                <SelectItem value="waitlisted">{language === "en" ? "Waitlisted" : "สำรอง"}</SelectItem>
+                <SelectItem value="planned">{t("form.statusPlanned")}</SelectItem>
+                <SelectItem value="enrolled">{t("form.statusEnrolled")}</SelectItem>
+                <SelectItem value="waitlisted">{t("form.statusWaitlisted")}</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label={language === "en" ? "Online class URL" : "ลิงก์ห้องเรียนออนไลน์"}>
+          <Field label={t("form.onlineUrl")}>
             <Input type="url" value={value.onlineUrl ?? ""} onChange={(event) => update("onlineUrl", event.target.value)} placeholder="https://..." />
           </Field>
-          <Field label={language === "en" ? "Midterm date" : "วันสอบกลางภาค"}>
+          <Field label={t("form.midtermDate")}>
             <Input type="date" value={value.midtermDate ?? ""} onChange={(event) => update("midtermDate", event.target.value)} />
           </Field>
-          <Field label={language === "en" ? "Final date" : "วันสอบปลายภาค"}>
+          <Field label={t("form.finalDate")}>
             <Input type="date" value={value.finalDate ?? ""} onChange={(event) => update("finalDate", event.target.value)} />
           </Field>
           <Field label={t("form.instructor")}>
-            <Input value={value.instructor} onChange={(event) => update("instructor", event.target.value)} placeholder={language === "en" ? "Instructor name" : "ชื่อผู้สอน"} />
+            <Input value={value.instructor} onChange={(event) => update("instructor", event.target.value)} placeholder={t("form.instructorPlaceholder")} />
           </Field>
           <Field label={t("form.room")}>
-            <Input value={value.room} onChange={(event) => update("room", event.target.value)} placeholder={language === "en" ? "e.g., LRC 205" : "เช่น LRC 205"} />
+            <Input value={value.room} onChange={(event) => update("room", event.target.value)} placeholder={t("form.roomPlaceholder")} />
           </Field>
           <div className="md:col-span-2">
             <Field label={t("form.note")}>
-              <Textarea value={value.note ?? ""} onChange={(event) => update("note", event.target.value)} placeholder={language === "en" ? "e.g., Lab group or required items" : "เช่น กลุ่มแล็บ หรือสิ่งที่ต้องเตรียม"} />
+              <Textarea value={value.note ?? ""} onChange={(event) => update("note", event.target.value)} placeholder={t("form.notePlaceholder")} />
             </Field>
           </div>
         </div>
       </details>
 
       {overlaps.length > 0 ? (
-        <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="flex gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            {language === "en" ? `Time overlaps with ${(Array.isArray(overlaps) ? overlaps : []).map((item) => item.courseCode).join(", ")} but can still be saved. The system will separate them into another row.` : `เวลาชนกับวิชา ${(Array.isArray(overlaps) ? overlaps : []).map((item) => item.courseCode).join(", ")} แต่ยังบันทึกได้ โดยระบบจะแยกเป็นอีกแถวให้`}
+            {t("form.overlapDetail", { courses: (Array.isArray(overlaps) ? overlaps : []).map((item) => item.courseCode).join(", ") })}
           </p>
         </div>
       ) : null}
