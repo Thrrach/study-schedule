@@ -1,7 +1,7 @@
 import { hasTimeOverlap, isValidTime, normalizeInterval, normalizeTimeSlots, timeToMinutes } from "@/lib/time";
 import { normalizeClass, safeDays, subjectsShareDay } from "@/lib/subject-utils";
 import { uid } from "@/lib/utils";
-import type { ClassItem, TimetableSettings, WeekDay } from "@/types/timetable";
+import type { ClassItem, Day, MakeupDay, TimetableSettings, WeekDay } from "@/types/timetable";
 
 /** คำนวณระยะห่างระหว่างเวลาสองค่าเป็นนาที */
 export function timeDiff(start: string, end: string) {
@@ -62,6 +62,12 @@ export function normalizeSettings(rawSettings: unknown, fallback: TimetableSetti
   const semester = stringValue(raw.semester, fallback.semester ?? "");
   const studentName = stringValue(raw.studentName, fallback.studentName ?? "");
   const language = raw.language === "en" || raw.language === "th" ? raw.language : (fallback.language ?? "th");
+  const semesterStartDate = normalizeDate(raw.semesterStartDate, fallback.semesterStartDate ?? "");
+  const semesterEndDate = normalizeDate(raw.semesterEndDate, fallback.semesterEndDate ?? "");
+  const excludedDates = normalizeDates(raw.excludedDates);
+  const makeupDays = normalizeMakeupDays(raw.makeupDays);
+  const visibleDays = normalizeVisibleDays(raw.visibleDays, fallback.visibleDays);
+  const lastBackupAt = typeof raw.lastBackupAt === "string" ? raw.lastBackupAt : (fallback.lastBackupAt ?? "");
 
   if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
     return {
@@ -70,7 +76,13 @@ export function normalizeSettings(rawSettings: unknown, fallback: TimetableSetti
       timeSlots,
       semester,
       studentName,
-      language
+      language,
+      semesterStartDate,
+      semesterEndDate,
+      excludedDates,
+      makeupDays,
+      visibleDays,
+      lastBackupAt
     };
   }
 
@@ -81,8 +93,41 @@ export function normalizeSettings(rawSettings: unknown, fallback: TimetableSetti
     timeSlots,
     semester,
     studentName,
-    language
+    language,
+    semesterStartDate,
+    semesterEndDate,
+    excludedDates,
+    makeupDays,
+    visibleDays,
+    lastBackupAt
   };
+}
+
+const allDays: Day[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+function normalizeDate(value: unknown, fallback = "") {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : fallback;
+}
+
+function normalizeDates(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.map((item) => normalizeDate(item)).filter(Boolean))).sort();
+}
+
+function normalizeVisibleDays(value: unknown, fallback: Day[] | undefined) {
+  const days = Array.isArray(value) ? value.filter((day): day is Day => allDays.includes(day as Day)) : [];
+  return Array.from(new Set(days.length ? days : fallback?.length ? fallback : allDays.slice(0, 5)));
+}
+
+function normalizeMakeupDays(value: unknown): MakeupDay[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const record = item as Record<string, unknown>;
+    const date = normalizeDate(record.date);
+    const followsDay = allDays.includes(record.followsDay as Day) ? record.followsDay as Day : null;
+    return date && followsDay ? [{ date, followsDay }] : [];
+  });
 }
 
 export const timetableService = {
@@ -107,12 +152,12 @@ export const timetableService = {
   },
 
   /** ทำสำเนารายวิชาและกำหนดรหัสกับเวลาบันทึกใหม่ */
-  duplicateClass(source: ClassItem): ClassItem {
+  duplicateClass(source: ClassItem, copyLabel = "สำเนา"): ClassItem {
     const timestamp = Date.now();
     return {
       ...source,
       id: uid(),
-      courseName: source.courseName ? `${source.courseName} (สำเนา)` : "รายวิชาไม่มีชื่อ (สำเนา)",
+      courseName: source.courseName ? `${source.courseName} (${copyLabel})` : `Untitled course (${copyLabel})`,
       createdAt: timestamp,
       updatedAt: timestamp
     };
