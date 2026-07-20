@@ -3,6 +3,7 @@
 import * as React from "react";
 import { CheckCircle2, Info, X, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 type ToastVariant = "success" | "error" | "info";
 
@@ -27,6 +28,7 @@ const DEFAULT_DURATION_MS = 3200;
 
 /** จัดการรายการ toast และ timer สำหรับซ่อนการแจ้งเตือนอัตโนมัติ */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const [toasts, setToasts] = React.useState<ToastItem[]>([]);
   const timersRef = React.useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
@@ -64,7 +66,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div className="pointer-events-none fixed right-4 top-4 z-[100] flex w-[min(100vw-2rem,24rem)] flex-col gap-2">
         {toasts.map((item) => (
-          <ToastCard key={item.id} toast={item} onDismiss={() => dismiss(item.id)} />
+          <ToastCard key={item.id} toast={item} onDismiss={() => dismiss(item.id)} closeLabel={t("toast.close")} />
         ))}
       </div>
     </ToastContext.Provider>
@@ -81,11 +83,11 @@ export function useToast() {
 }
 
 /** แสดง toast หนึ่งรายการพร้อมสีและไอคอนตามประเภทการแจ้งเตือน */
-function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => void }) {
+function ToastCard({ toast, onDismiss, closeLabel }: { toast: ToastItem; onDismiss: () => void; closeLabel: string }) {
   const variantStyles = {
-    success: "border-emerald-200 bg-emerald-50 text-emerald-950",
-    error: "border-red-200 bg-red-50 text-red-950",
-    info: "border-sky-200 bg-sky-50 text-sky-950"
+    success: "border-emerald-500/30 bg-emerald-50 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-100",
+    error: "border-red-500/30 bg-red-50 text-red-950 dark:bg-red-950 dark:text-red-100",
+    info: "border-sky-500/30 bg-sky-50 text-sky-950 dark:bg-sky-950 dark:text-sky-100"
   } satisfies Record<ToastVariant, string>;
   const Icon = {
     success: CheckCircle2,
@@ -111,7 +113,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
         type="button"
         onClick={onDismiss}
         className="rounded-md p-1 opacity-70 transition hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="ปิดแจ้งเตือน"
+        aria-label={closeLabel}
       >
         <X className="h-4 w-4" />
       </button>

@@ -1,6 +1,6 @@
 import { normalizeDay } from "@/lib/subject-utils";
 import { isValidTime, timeToMinutes } from "@/lib/time";
-import type { ClassItem, ClassType, EnrollmentStatus, WeekDay } from "@/types/timetable";
+import type { ClassItem, ClassType, EnrollmentStatus, Language, WeekDay } from "@/types/timetable";
 
 export type ImportedClass = Omit<ClassItem, "id" | "createdAt" | "updatedAt">;
 
@@ -29,9 +29,9 @@ const headerAliases: Record<string, string> = {
 
 const colors = ["#0f766e", "#2563eb", "#d97706", "#7c3aed", "#be123c", "#0891b2"];
 
-export function parseClassImport(text: string): ImportResult {
+export function parseClassImport(text: string, language: Language = "th"): ImportResult {
   const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim());
-  if (!lines.length) return { classes: [], errors: ["ไม่พบข้อมูลสำหรับนำเข้า"] };
+  if (!lines.length) return { classes: [], errors: [language === "en" ? "No import data found" : "ไม่พบข้อมูลสำหรับนำเข้า"] };
   const delimiter = lines[0].includes("\t") ? "\t" : ",";
   const rows = lines.map((line) => parseDelimitedLine(line, delimiter));
   const normalizedHeaders = rows[0].map((header) => headerAliases[normalizeHeader(header)] ?? "");
@@ -50,15 +50,15 @@ export function parseClassImport(text: string): ImportResult {
     const startTime = normalizeImportedTime(record.startTime);
     const endTime = normalizeImportedTime(record.endTime);
     if (!record.courseCode || !record.courseName) {
-      errors.push(`แถว ${rowNumber}: ต้องมีรหัสวิชาและชื่อวิชา`);
+      errors.push(language === "en" ? `Row ${rowNumber}: course code and name are required` : `แถว ${rowNumber}: ต้องมีรหัสวิชาและชื่อวิชา`);
       return;
     }
     if (!days.length) {
-      errors.push(`แถว ${rowNumber}: วันเรียนไม่ถูกต้อง`);
+      errors.push(language === "en" ? `Row ${rowNumber}: invalid class day` : `แถว ${rowNumber}: วันเรียนไม่ถูกต้อง`);
       return;
     }
     if (!startTime || !endTime || timeToMinutes(endTime) <= timeToMinutes(startTime)) {
-      errors.push(`แถว ${rowNumber}: ช่วงเวลาไม่ถูกต้อง`);
+      errors.push(language === "en" ? `Row ${rowNumber}: invalid time range` : `แถว ${rowNumber}: ช่วงเวลาไม่ถูกต้อง`);
       return;
     }
 

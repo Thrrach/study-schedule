@@ -22,7 +22,7 @@ interface ClassCardProps {
 /** แสดงข้อมูลรายวิชาเป็นการ์ดที่เปิดรายละเอียด แก้ไข ทำสำเนา ลบ และลากย้ายได้ */
 export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate, onDelete }: ClassCardProps) {
   const { t, language } = useTranslation();
-  const theme = getSubjectTheme(item);
+  const theme = getSubjectTheme(item, language);
   const dayLabels = safeDays(item.days)
     .map((day) => language === "en" ? weekDays.find((weekDay) => weekDay.key === day)?.shortLabelEn : weekDays.find((weekDay) => weekDay.key === day)?.shortLabelTh ?? day)
     .join(", ");
@@ -46,7 +46,7 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
       draggable
       role="button"
       tabIndex={0}
-      aria-label={`ดูรายละเอียด ${item.courseCode} ${item.courseName}`}
+      aria-label={t("card.view", { code: item.courseCode, name: item.courseName })}
       onClick={openDetail}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -64,7 +64,7 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
         event.dataTransfer.effectAllowed = "move";
       }}
       className={cn(
-        "group relative flex min-h-[90px] flex-col rounded border px-3 py-3 text-left shadow-sm ring-1 ring-slate-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,.12)]",
+        "group relative flex min-h-[90px] flex-col rounded-xl border px-3 py-3 text-left shadow-sm ring-1 ring-black/5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 hover:-translate-y-0.5 hover:shadow-lg",
         compact ? "h-full gap-2 pr-10" : "gap-3 p-4"
       )}
       style={{ backgroundColor: theme.background, borderColor: theme.border, color: theme.text }}
@@ -104,12 +104,12 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
             </p>
           ))
         ) : (
-          <p className="text-slate-500">ยังไม่ระบุห้อง/อาจารย์</p>
+          <p className="text-slate-500">{t("card.noLocation")}</p>
         )}
       </div>
 
-      <div className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-30 hidden w-64 -translate-x-1/2 rounded-md border bg-white p-3 text-left text-xs leading-5 text-slate-700 shadow-lg group-hover:block group-focus-visible:block no-print">
-        <p className="font-semibold text-slate-950">
+      <div className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-30 hidden w-64 -translate-x-1/2 rounded-xl border bg-popover p-3 text-left text-xs leading-5 text-popover-foreground shadow-xl group-hover:block group-focus-visible:block no-print">
+        <p className="font-semibold text-foreground">
           {item.courseCode} {item.courseName}
         </p>
         <p>{t("form.instructor")}: {item.instructor || "-"}</p>
@@ -121,7 +121,7 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
       <div
         className={cn(
           "flex justify-end gap-1 opacity-100 no-print md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100",
-          compact && "absolute bottom-1.5 right-1.5 rounded-md bg-white/95 shadow-sm ring-1 ring-slate-200"
+          compact && "absolute bottom-1.5 right-1.5 rounded-lg bg-white/95 shadow-sm ring-1 ring-black/10"
         )}
       >
         <Button
@@ -132,7 +132,7 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
             stopAction(event);
             onEdit(item);
           }}
-          aria-label="แก้ไขรายวิชา"
+          aria-label={t("card.edit")}
         >
           <Pencil className="h-3.5 w-3.5" />
         </Button>
@@ -144,7 +144,7 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
             stopAction(event);
             onDuplicate(item.id);
           }}
-          aria-label="ทำสำเนารายวิชา"
+          aria-label={t("card.duplicate")}
         >
           <Copy className="h-3.5 w-3.5" />
         </Button>
@@ -156,7 +156,7 @@ export function ClassCard({ item, compact, dragDay, onView, onEdit, onDuplicate,
             stopAction(event);
             onDelete(item.id);
           }}
-          aria-label="ลบรายวิชา"
+          aria-label={t("card.delete")}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>

@@ -18,31 +18,31 @@ const example = `courseCode,courseName,section,days,startTime,endTime,instructor
 344-211,Database Systems,01,Monday/Wednesday,08:00,09:50,Instructor Name,LRC 205,3,lecture,enrolled`;
 
 export function BulkImportDialog({ open, onOpenChange, onImport }: BulkImportDialogProps) {
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const [text, setText] = useState("");
-  const result = useMemo(() => parseClassImport(text), [text]);
+  const result = useMemo(() => parseClassImport(text, language), [language, text]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{language === "en" ? "Import courses from CSV or text" : "นำเข้ารายวิชาจาก CSV หรือข้อความ"}</DialogTitle>
+          <DialogTitle>{t("import.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm text-sky-900">
-            {language === "en" ? "Paste comma-separated or tab-separated rows. English and Thai column names are supported." : "วางข้อมูลที่คั่นด้วย comma หรือ tab รองรับชื่อคอลัมน์ภาษาไทยและอังกฤษ"}
+          <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 text-sm text-foreground">
+            {t("import.description")}
           </div>
-          <Textarea className="min-h-56 font-mono text-xs" value={text} onChange={(event) => setText(event.target.value)} placeholder={example} aria-label={language === "en" ? "Course import data" : "ข้อมูลรายวิชาสำหรับนำเข้า"} />
+          <Textarea className="min-h-56 font-mono text-xs" value={text} onChange={(event) => setText(event.target.value)} placeholder={example} aria-label={t("import.aria")} />
           {text.trim() ? (
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border bg-white p-3 text-sm"><strong>{result.classes.length}</strong> {language === "en" ? "valid courses" : "รายวิชาที่พร้อมนำเข้า"}</div>
-              <div className={`rounded-lg border p-3 text-sm ${result.errors.length ? "border-amber-200 bg-amber-50 text-amber-900" : "bg-emerald-50 text-emerald-900"}`}><strong>{result.errors.length}</strong> {language === "en" ? "rows with errors" : "แถวที่มีข้อผิดพลาด"}</div>
+              <div className="rounded-xl border bg-card p-3 text-sm"><strong>{result.classes.length}</strong> {t("import.valid")}</div>
+              <div className={`rounded-xl border p-3 text-sm ${result.errors.length ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"}`}><strong>{result.errors.length}</strong> {t("import.errors")}</div>
             </div>
           ) : null}
-          {result.errors.length ? <ul className="max-h-28 overflow-auto rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">{result.errors.map((error) => <li key={error}>{error}</li>)}</ul> : null}
+          {result.errors.length ? <ul className="max-h-28 overflow-auto rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">{result.errors.map((error) => <li key={error}>{error}</li>)}</ul> : null}
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>{language === "en" ? "Cancel" : "ยกเลิก"}</Button>
-            <Button disabled={!result.classes.length} onClick={() => { onImport(result.classes); setText(""); onOpenChange(false); }}><FileSpreadsheet className="h-4 w-4" />{language === "en" ? `Import ${result.classes.length}` : `นำเข้า ${result.classes.length} วิชา`}</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>{t("form.cancel")}</Button>
+            <Button disabled={!result.classes.length} onClick={() => { onImport(result.classes); setText(""); onOpenChange(false); }}><FileSpreadsheet className="h-4 w-4" />{t("import.action", { count: result.classes.length })}</Button>
           </div>
         </div>
       </DialogContent>

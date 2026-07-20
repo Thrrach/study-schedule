@@ -39,9 +39,9 @@ export function TimeSlot({
         if (payload.id) onDropClass(payload.id, day, time, payload.sourceDay);
       }}
       className={cn(
-        "min-h-32 border-b border-r border-slate-200 bg-white p-1.5 transition-colors",
-        "hover:bg-sky-50/60",
-        classes.length > 1 && "bg-amber-50/60"
+        "min-h-32 border-b border-r bg-card p-1.5 transition-colors",
+        "hover:bg-primary/5",
+        classes.length > 1 && "bg-amber-500/10"
       )}
     >
       <div className="space-y-1.5">

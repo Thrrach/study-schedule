@@ -152,12 +152,12 @@ export const timetableService = {
   },
 
   /** ทำสำเนารายวิชาและกำหนดรหัสกับเวลาบันทึกใหม่ */
-  duplicateClass(source: ClassItem): ClassItem {
+  duplicateClass(source: ClassItem, copyLabel = "สำเนา"): ClassItem {
     const timestamp = Date.now();
     return {
       ...source,
       id: uid(),
-      courseName: source.courseName ? `${source.courseName} (สำเนา)` : "รายวิชาไม่มีชื่อ (สำเนา)",
+      courseName: source.courseName ? `${source.courseName} (${copyLabel})` : `Untitled course (${copyLabel})`,
       createdAt: timestamp,
       updatedAt: timestamp
     };
