@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useTimetableApi } from "@/api/timetable.api";
 import { timetableService, normalizeSettings } from "@/services/timetable.service";
 import { normalizeClasses } from "@/lib/subject-utils";
@@ -28,6 +29,10 @@ export function useTimetableController() {
     undo,
     redo
   } = useTimetableApi();
+
+  useEffect(() => {
+    void useTimetableApi.persist.rehydrate();
+  }, []);
 
   /** สร้างรายวิชาใหม่แล้วบันทึกลง state */
   const addClass = (item: Omit<ClassItem, "id" | "createdAt" | "updatedAt">) => {
