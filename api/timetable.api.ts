@@ -136,6 +136,7 @@ export const useTimetableApi = create<TimetableState>()(
     {
       name: "psu-timetable-builder",
       version: 3,
+      skipHydration: true,
       /** เลือกเฉพาะข้อมูลถาวรที่ต้องเก็บลง local storage */
       partialize: (state) => ({ classes: state.classes, settings: state.settings, plans: state.plans, activePlanId: state.activePlanId }),
       /** ปรับข้อมูล persistence รุ่นเก่าให้เป็น schema ปัจจุบัน */
